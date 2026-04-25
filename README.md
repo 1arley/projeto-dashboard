@@ -1,8 +1,21 @@
 # ⚡ Energy Demand Analytics Dashboard (ps: desculpa pela documentação longa)
 
-Este repositório contém a solução Full-Stack para o desafio de visualização e análise de dados. O projeto processa uma base de dados de demanda de eletricidade (preços e consumo) e expõe métricas agregadas através de uma REST API.
+Este repositório apresenta uma solução **Full-Stack** para análise e visualização de dados de demanda de energia elétrica. A aplicação é responsável por processar uma base de dados contendo informações de **consumo** e **preços de eletricidade**, disponibilizando métricas agregadas por meio de uma **API REST**.
 
-O back-end foi desenvolvido com **Django REST Framework**, utilizando **PostgreSQL** para o armazenamento relacional dos dados e **Docker** para garantir um ambiente de execução isolado e padronizado.
+## 🧱 Stack Tecnológica
+
+O back-end foi desenvolvido utilizando:
+
+- **Django REST Framework** para construção da API
+- **PostgreSQL** como banco de dados relacional
+- **Docker** para garantir um ambiente isolado, reproduzível e padronizado
+
+## 📊 Fonte dos Dados
+
+Os dados utilizados neste projeto foram obtidos a partir do seguinte dataset público:
+
+- Electricity Demands Dataset (Kaggle):  
+  https://www.kaggle.com/datasets/ulrikthygepedersen/electricity-demands/data
 
 ## 🛠️ Pré-requisitos
 
