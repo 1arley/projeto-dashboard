@@ -50,9 +50,8 @@ VALID_CLASSES = {"UP", "DOWN"}
 class DashboardFilterSerializer(serializers.Serializer):
     """Valida os query parameters dos endpoints do dashboard."""
     day = serializers.CharField(required=False, allow_blank=True)
-    # 'class' é palavra reservada em Python; usamos source
     demand_class = serializers.CharField(
-        required=False, allow_blank=True, source='class'
+        required=False, allow_blank=True
     )
 
     def validate_day(self, value):

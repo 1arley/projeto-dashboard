@@ -16,16 +16,17 @@ import {
    - Tooltip: bg-white, border sutil, rounded-xl
    -------------------------------------------------------------- */
 
-/* Tooltip customizado — combina com o estilo dos KPI cards */
-function CustomTooltip({ active, payload, label }) {
+/* Tooltip customizado — usa os dados reais para mapear o índice */
+function CustomTooltip({ active, payload, label, data }) {
   if (!active || !payload?.length) return null;
 
-  const dayNum = Math.round(label * 932) + 1;
+  const idx = data?.findIndex(d => d.date === label) ?? -1;
+  const display = idx >= 0 ? `Período ${idx + 1}` : label.toFixed(3);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
       <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-        Dia {dayNum}
+        {display}
       </p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2 text-sm">
@@ -75,13 +76,16 @@ export default function DemandLineChart({ data = [] }) {
             vertical={false}
           />
 
-          {/* Eixo X — Data (0.0 ~ 1.0 → Dia 1 ~ Dia 933) */}
+          {/* Eixo X — Data normalizada → índice real no array */}
           <XAxis
             dataKey="date"
             tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "DM Sans" }}
             tickLine={false}
             axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
-            tickFormatter={(v) => `Dia ${Math.round(v * 932) + 1}`}
+            tickFormatter={(v) => {
+              const i = data.findIndex(d => d.date === v);
+              return i >= 0 ? `P${i + 1}` : v.toFixed(3);
+            }}
           />
 
           {/* Eixo Y */}
@@ -92,7 +96,7 @@ export default function DemandLineChart({ data = [] }) {
             tickFormatter={(v) => v.toFixed(2)}
           />
 
-          <Tooltip content={<CustomTooltip />} cursor={false} />
+          <Tooltip content={<CustomTooltip data={data} />} cursor={false} />
           <Legend content={<CustomLegend />} />
 
           {/* NSW — slate-500 (dessaturado, profissional) */}

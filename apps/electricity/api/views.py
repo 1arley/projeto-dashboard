@@ -31,29 +31,27 @@ DAY_NUMBER_TO_NAME = {v: k for k, v in DAY_NAME_TO_NUMBER.items()}
 def _validate_filters(request):
     """
     Valida os query params do dashboard.
-    Retorna (is_valid: bool, errors_or_none).
+    Retorna (is_valid: bool, validated_data|None, errors|None).
     """
     filter_ser = DashboardFilterSerializer(data={
         'day': request.GET.get('day', ''),
         'demand_class': request.GET.get('class', ''),
     })
     if not filter_ser.is_valid():
-        return False, filter_ser.errors
-    return True, None
+        return False, None, filter_ser.errors
+    return True, filter_ser.validated_data, None
 
 
-def _build_queryset(request):
-    """Aplica filtros common (day, class) à queryset base."""
+def _build_queryset(filters):
+    """Aplica filtros validados à queryset base."""
     qs = ElectricityRecord.objects.all()
 
-    day = request.GET.get('day')
+    day = filters.get('day')
     if day:
-        # O frontend envia o nome do dia (Monday, Tuesday, ...),
-        # mas o banco armazena o valor numérico (1-7).
         day_value = DAY_NAME_TO_NUMBER.get(day, day)
         qs = qs.filter(day=day_value)
 
-    demand_class = request.GET.get('class')
+    demand_class = filters.get('demand_class')
     if demand_class:
         qs = qs.filter(demand_class=demand_class)
 
@@ -68,25 +66,27 @@ class DashboardKPIView(APIView):
     """Retorna os 4 KPIs principais do dashboard."""
 
     def get(self, request):
-        valid, errors = _validate_filters(request)
+        valid, filters, errors = _validate_filters(request)
         if not valid:
             return Response(
                 {"detail": "Filtros inválidos", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        qs = _build_queryset(request)
+        qs = _build_queryset(filters)
 
         total_records = qs.count()
-        avg_nsw_price = qs.aggregate(v=Avg('nsw_price'))['v']
-        avg_vic_price = qs.aggregate(v=Avg('vic_price'))['v']
-        avg_transfer = qs.aggregate(v=Avg('transfer'))['v']
+        agg = qs.aggregate(
+            avg_nsw_price=Avg('nsw_price'),
+            avg_vic_price=Avg('vic_price'),
+            avg_transfer=Avg('transfer'),
+        )
 
         data = {
             "total_records": total_records,
-            "avg_nsw_price": round(avg_nsw_price, 4) if avg_nsw_price else 0,
-            "avg_vic_price": round(avg_vic_price, 4) if avg_vic_price else 0,
-            "avg_transfer": round(avg_transfer, 4) if avg_transfer else 0,
+            "avg_nsw_price": round(agg['avg_nsw_price'], 4) if agg['avg_nsw_price'] else 0,
+            "avg_vic_price": round(agg['avg_vic_price'], 4) if agg['avg_vic_price'] else 0,
+            "avg_transfer": round(agg['avg_transfer'], 4) if agg['avg_transfer'] else 0,
         }
 
         serializer = KpiSerializer(data)
@@ -101,14 +101,14 @@ class DemandChartView(APIView):
     """Retorna a série temporal da demanda NSW vs VIC."""
 
     def get(self, request):
-        valid, errors = _validate_filters(request)
+        valid, filters, errors = _validate_filters(request)
         if not valid:
             return Response(
                 {"detail": "Filtros inválidos", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        qs = _build_queryset(request)
+        qs = _build_queryset(filters)
 
         demand_by_date = qs.values('date').annotate(
             avg_nsw_demand=Avg('nsw_demand'),
@@ -127,14 +127,14 @@ class ClassDistributionView(APIView):
     """Retorna a distribuição de registos por classe (UP / DOWN)."""
 
     def get(self, request):
-        valid, errors = _validate_filters(request)
+        valid, filters, errors = _validate_filters(request)
         if not valid:
             return Response(
                 {"detail": "Filtros inválidos", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        qs = _build_queryset(request)
+        qs = _build_queryset(filters)
 
         distribution = qs.values('demand_class').annotate(
             total=Count('id')
@@ -152,14 +152,14 @@ class DayDemandView(APIView):
     """Retorna a procura média por dia da semana."""
 
     def get(self, request):
-        valid, errors = _validate_filters(request)
+        valid, filters, errors = _validate_filters(request)
         if not valid:
             return Response(
                 {"detail": "Filtros inválidos", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        qs = _build_queryset(request)
+        qs = _build_queryset(filters)
 
         rows = qs.values('day').annotate(
             avg_nsw_demand=Avg('nsw_demand'),
@@ -187,20 +187,22 @@ class DashboardSummaryView(APIView):
     """Retorna KPIs + dados de todos os gráficos numa só resposta."""
 
     def get(self, request):
-        valid, errors = _validate_filters(request)
+        valid, filters, errors = _validate_filters(request)
         if not valid:
             return Response(
                 {"detail": "Filtros inválidos", "errors": errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        qs = _build_queryset(request)
+        qs = _build_queryset(filters)
 
         # KPIs
         total_records = qs.count()
-        avg_nsw_price = qs.aggregate(v=Avg('nsw_price'))['v']
-        avg_vic_price = qs.aggregate(v=Avg('vic_price'))['v']
-        avg_transfer = qs.aggregate(v=Avg('transfer'))['v']
+        agg = qs.aggregate(
+            avg_nsw_price=Avg('nsw_price'),
+            avg_vic_price=Avg('vic_price'),
+            avg_transfer=Avg('transfer'),
+        )
 
         # Class distribution
         class_distribution = qs.values('demand_class').annotate(
@@ -231,9 +233,9 @@ class DashboardSummaryView(APIView):
         return Response({
             "kpis": {
                 "total_records": total_records,
-                "avg_nsw_price": round(avg_nsw_price, 4) if avg_nsw_price else 0,
-                "avg_vic_price": round(avg_vic_price, 4) if avg_vic_price else 0,
-                "avg_transfer": round(avg_transfer, 4) if avg_transfer else 0,
+                "avg_nsw_price": round(agg['avg_nsw_price'], 4) if agg['avg_nsw_price'] else 0,
+                "avg_vic_price": round(agg['avg_vic_price'], 4) if agg['avg_vic_price'] else 0,
+                "avg_transfer": round(agg['avg_transfer'], 4) if agg['avg_transfer'] else 0,
             },
             "charts": {
                 "class_distribution": ClassDistributionSerializer(class_distribution, many=True).data,
