@@ -9,3 +9,6 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app/
+
+RUN adduser --disabled-password --gecos '' appuser
+USER appuser
