@@ -58,6 +58,20 @@ def _build_queryset(filters):
     return qs
 
 
+def _get_kpi_data(qs):
+    """Retorna dict com total_records + 3 médias agregadas."""
+    total_records = qs.count()
+    agg = qs.aggregate(
+        avg_nsw_price=Avg('nsw_price'),
+        avg_vic_price=Avg('vic_price'),
+        avg_transfer=Avg('transfer'),
+    )
+    return {
+        "total_records": total_records,
+        **{k: round(v, 4) if v else 0 for k, v in agg.items()},
+    }
+
+
 # ------------------------------------------------------------------
 # /api/electricity/dashboard/kpis/
 # ------------------------------------------------------------------
@@ -74,20 +88,7 @@ class DashboardKPIView(APIView):
             )
 
         qs = _build_queryset(filters)
-
-        total_records = qs.count()
-        agg = qs.aggregate(
-            avg_nsw_price=Avg('nsw_price'),
-            avg_vic_price=Avg('vic_price'),
-            avg_transfer=Avg('transfer'),
-        )
-
-        data = {
-            "total_records": total_records,
-            "avg_nsw_price": round(agg['avg_nsw_price'], 4) if agg['avg_nsw_price'] else 0,
-            "avg_vic_price": round(agg['avg_vic_price'], 4) if agg['avg_vic_price'] else 0,
-            "avg_transfer": round(agg['avg_transfer'], 4) if agg['avg_transfer'] else 0,
-        }
+        data = _get_kpi_data(qs)
 
         serializer = KpiSerializer(data)
         return Response(serializer.data)
@@ -197,12 +198,7 @@ class DashboardSummaryView(APIView):
         qs = _build_queryset(filters)
 
         # KPIs
-        total_records = qs.count()
-        agg = qs.aggregate(
-            avg_nsw_price=Avg('nsw_price'),
-            avg_vic_price=Avg('vic_price'),
-            avg_transfer=Avg('transfer'),
-        )
+        kpi_data = _get_kpi_data(qs)
 
         # Class distribution
         class_distribution = qs.values('demand_class').annotate(
@@ -231,12 +227,7 @@ class DashboardSummaryView(APIView):
         ]
 
         return Response({
-            "kpis": {
-                "total_records": total_records,
-                "avg_nsw_price": round(agg['avg_nsw_price'], 4) if agg['avg_nsw_price'] else 0,
-                "avg_vic_price": round(agg['avg_vic_price'], 4) if agg['avg_vic_price'] else 0,
-                "avg_transfer": round(agg['avg_transfer'], 4) if agg['avg_transfer'] else 0,
-            },
+            "kpis": kpi_data,
             "charts": {
                 "class_distribution": ClassDistributionSerializer(class_distribution, many=True).data,
                 "demand_by_date": DemandPointSerializer(demand_by_date, many=True).data,

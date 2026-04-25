@@ -251,17 +251,18 @@ class ElectricityRecordModelTests(TestCase):
         self.assertIn("UP", str(record))
 
     def test_default_ordering(self):
-        ElectricityRecord.objects.create(
-            date=0.2, day="1", period=0.5,
+        r1 = ElectricityRecord.objects.create(
+            date=0.9, day="1", period=0.5,
             nsw_price=0.01, nsw_demand=0.01,
             vic_price=0.01, vic_demand=0.01,
             transfer=0.01, demand_class="UP"
         )
-        ElectricityRecord.objects.create(
+        r2 = ElectricityRecord.objects.create(
             date=0.1, day="1", period=0.0,
             nsw_price=0.01, nsw_demand=0.01,
             vic_price=0.01, vic_demand=0.01,
             transfer=0.01, demand_class="UP"
         )
         records = list(ElectricityRecord.objects.all())
-        self.assertLessEqual(records[0].date, records[1].date)
+        self.assertEqual(records[0].pk, r2.pk)  # 0.1 vem antes de 0.9
+        self.assertEqual(records[1].pk, r1.pk)
