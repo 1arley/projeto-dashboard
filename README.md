@@ -1,216 +1,88 @@
-# ⚡ Energy Pulse — Dashboard Analítico de Demanda de Energia
+# ⚡ Energy Pulse — Dashboard Analítico
 
-Este repositório apresenta uma solução **Full-Stack** para análise e visualização de dados de demanda de energia elétrica nos estados australianos **NSW** e **VIC**. A aplicação processa uma base de dados com mais de 45 mil registos, disponibilizando métricas agregadas e gráficos interativos através de uma interface limpa e profissional.
+Este projeto é a solução Full-Stack para o desafio técnico. A partir do [Electricity Demands Dataset (Kaggle)](https://www.kaggle.com/datasets/ulrikthygepedersen/electricity-demands/data) contendo mais de **45.312 registros**, desenvolvi uma arquitetura end-to-end organizada, responsiva e voltada para a clareza analítica.
 
-## 🧱 Stack Tecnológica
+## 🎯 Atendimento aos Requisitos e Visão Analítica
 
-### Back-end
-- **Django + Django REST Framework** — API REST
-- **PostgreSQL 15** — Banco de dados relacional
-- **Gunicorn** — Servidor WSGI (produção)
-- **Pandas** — Processamento e limpeza dos dados
+A solução foi estruturada para ir além de código funcional, fornecendo verdadeiro valor analítico:
 
-### Front-end
-- **React 19** — Componentes funcionais com Hooks
-- **Vite 8** — Build tool e dev server
-- **Tailwind CSS v4** — Estilização utilitária
-- **Recharts** — Visualização de dados
-- **Lucide React** — Iconografia
-
-### Infraestrutura
-- **Docker + Docker Compose** — Ambientes isolados e reproduzíveis
-- **Nginx** — Servir estáticos e proxy reverso (produção)
-- **Multi-stage build** — Imagem final ~25 MB
-
-## 📊 Fonte dos Dados
-
-Os dados utilizados neste projeto foram obtidos a partir do seguinte dataset público:
-
-- [Electricity Demands Dataset (Kaggle)](https://www.kaggle.com/datasets/ulrikthygepedersen/electricity-demands/data)
-
-## 🛠️ Pré-requisitos
-
-Para rodar este projeto, precisas de ter instalado:
-
-- [Docker](https://www.docker.com/get-started)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-- Git
+1. **Manipulação e Organização (ETL):** O script de importação (`load_csv.py`) limpa bytes e tipos sujos nativamente e executa inserção otimizada (`bulk_create`) no PostgreSQL.
+2. **Back-end em Django REST:** API RESTful modularizada com serializers do DRF, provendo validação rígida de filtros (retornando HTTP 400 claro em vez de falhas silenciosas) e proteção de throttling.
+3. **Interface Funcional e Limpa:** Front-end React 19 + Tailwind v4 focado na experiência do usuário (UX). Design harmonioso, carregamento assíncrono por gráficos ("graceful degradation" de animações em navegadores restritivos) e indicadores vitais na primeira dobra.
+4. **🧠 Olhar Analítico sobre os Dados:** Fiel ao compromisso de transformar números em informações úteis, identifiquei uma peculiaridade histórica gravada na visualização: *As métricas do estado de Victoria (VIC) fluem como uma linha constante no primeiro ano do dataset.* Isso não é um erro de manipulação, mas um reflexo da formação do mercado elétrico australiano real (onde a leitura contínua começou no ano seguinte e o autor do dataset imputou o passado com a média constante). O sistema de insights capta e evidencia essas minúcias confiavelmente.
 
 ---
 
-## 🚀 Como Executar
+## 🛠️ Stack Tecnológica
 
-### 🏃 Via Expressa
+* **Back-end:** Python, Django, Django REST Framework
+* **Banco de Dados:** PostgreSQL 15
+* **Front-end:** React 19, Vite, Tailwind CSS v4, Recharts
+* **Infraestrutura:** Docker, Docker Compose, Gunicorn + Nginx
 
-#### Windows
+---
+
+## 🚀 Como Executar Localmente
+
+Toda a solução está containerizada e requer apenas o **Docker** instalado.
+
+### Opção 1: Inicialização Expressa (Recomendada)
+
+**Windows:**
 ```bash
 .\setup.bat
 ```
 
-#### Linux / Mac
+**Linux / Mac:**
 ```bash
 make setup
 ```
 
-O script trata de tudo: sobe os containers, aplica migrações e carrega os dados.
+### Opção 2: Inicialização Manual (Passo a passo)
 
-### 🖐️ Via Manual (passo a passo)
+Se preferir rodar os comandos individualmente pelo terminal:
 
 ```bash
-# 1. Clona o repositório
-git clone https://github.com/1arley/projeto-dashboard.git
-cd projeto-dashboard
-
-# 2. Sobe a infraestrutura (PostgreSQL + Django + Frontend)
+# 1. Suba os containers do Banco, Backend e Frontend em background
 docker compose up -d --build
 
-# 3. Aplica as migrações
+# 2. Aguarde 5 segundos para o banco mapear e aplique as migrações
 docker compose exec web python manage.py migrate
 
-# 4. Carrega os dados do CSV
+# 3. Importe a base de dados original para o PostgreSQL
 docker compose exec web python manage.py load_csv
-
-# 5. Acede ao dashboard
-# Frontend: http://localhost:5173
-# API:      http://localhost:8000/api/electricity/dashboard/
 ```
 
-### 🌐 Produção
-
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-# Aceder em: http://localhost:80
-```
+### 🌐 Acessando a Aplicação
+Após executar o script de inicialização, abra o navegador:
+* **Frontend:** [http://localhost:5173/](http://localhost:5173/)
+* **API Endpoints:** [http://localhost:8000/api/electricity/dashboard/](http://localhost:8000/api/electricity/dashboard/)
 
 ---
 
-## 📐 Layout do Dashboard
+## 🧪 Estrutura da API (Endpoints)
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  ⚡ Energy Pulse ··· 25 de abril de 2026                 │
-├──────────────────────┬───────────────────┬───────────────┤
-│  45.312 Registos     │  Preço Médio NSW  │  Preço VIC    │
-├──────────────────────┴───────────────────┴───────────────┤
-│ ┌────────────────────────────────────┐ ┌───────────────┐ │
-│ │   Evolução da Demanda (NSW + VIC)  │ │  UP / DOWN    │ │
-│ │   Gráfico de Linhas                │ │  Donut Chart  │ │
-│ └────────────────────────────────────┘ └───────────────┘ │
-├──────────────────────────────────────────────────────────┤
-│  Energy Pulse © 2026 — Dados processados via API Django   │
-└──────────────────────────────────────────────────────────┘
-```
+Base URL: `/api/electricity/`
 
-### Componentes
+A API é rica em endpoints agregados para isolar a responsabilidade visual do Front-end:
 
-| Componente | Descrição |
-|---|---|
-| `KpiCard` | Cartão de métrica com ícone, label e valor formatado |
-| `DemandLineChart` | Gráfico de linhas (NSW + VIC) com Recharts |
-| `ClassPieChart` | Gráfico donut (UP / DOWN) com label central |
-| `Dashboard` | Página principal com layout responsivo em grid |
-
----
-
-## 📂 Arquitetura do Projeto
-
-```
-projeto-dashboard/
-├── config/                        # Configurações Django
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── apps/electricity/              # Módulo de domínio (energia)
-│   ├── api/
-│   │   ├── views.py               # Endpoint da dashboard
-│   │   ├── serializers.py
-│   │   └── urls.py
-│   ├── management/commands/
-│   │   └── load_csv.py            # Script de importação de dados
-│   ├── models.py                  # Modelo ElectricityRecord
-│   └── admin.py
-├── frontend/                      # Aplicação React
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── KpiCard.jsx
-│   │   │   ├── DemandLineChart.jsx
-│   │   │   └── ClassPieChart.jsx
-│   │   ├── pages/
-│   │   │   └── Dashboard.jsx
-│   │   ├── services/
-│   │   │   └── api.js             # Cliente Axios
-│   │   ├── index.css              # Design System (Tailwind v4)
-│   │   └── App.jsx
-│   ├── Dockerfile                 # Multi-stage (dev + production)
-│   ├── nginx.conf                 # Proxy reverso + SPA fallback
-│   └── vite.config.js
-├── docker-compose.yml             # Desenvolvimento
-├── docker-compose.prod.yml        # Produção (override)
-├── Dockerfile                     # Back-end Django
-├── setup.bat                      # Setup automático (Windows)
-├── Makefile                       # Setup automático (Linux/Mac)
-├── electricity.csv                # Dataset
-└── requirements.txt
-```
-
----
-
-## 🧪 Endpoints da API
-
-| Método | Rota | Descrição |
+| Método | Rota | Descrição e Filtros aceitos (`?day=`, `?class=`) |
 |---|---|---|
-| GET | `/api/electricity/dashboard/` | KPIs + dados dos gráficos |
+| GET | `/dashboard/` | Agrega e traz todo o pacote de KPIs e dados p/ gráficos. |
+| GET | `/dashboard/kpis/` | Retorna somente as 4 métricas cardinais. |
+| GET | `/dashboard/charts/demand/` | Array seqüencial temporal da demanda de NSW e VIC. |
+| GET | `/dashboard/charts/classes/` | Distribuição matemática das tags UP e DOWN. |
+| GET | `/dashboard/charts/days/` | Procura agrupada e fatiada por dia da semana. |
 
-### Resposta (exemplo)
-
-```json
-{
-  "kpis": {
-    "total_records": 45312,
-    "avg_nsw_price": 0.0578,
-    "avg_vic_price": 0.0034
-  },
-  "charts": {
-    "class_distribution": [
-      { "demand_class": "UP", "total": 19236 },
-      { "demand_class": "DOWN", "total": 26076 }
-    ],
-    "demand_by_period": [
-      { "period": 0.0, "avg_nsw_demand": 0.439, "avg_vic_demand": 0.422 }
-    ]
-  }
-}
-```
+*Exemplo de fluxo inválido:* Ao passar `?day=Invalido`, a API repudia com `400 Bad Request` descrevendo o campo falho.
 
 ---
 
-## 🎨 Design System
+## 🧪 Cobertura de Testes
 
-- **Fundo:** `bg-gray-50`
-- **Cartões:** `bg-white border border-gray-100 shadow-sm rounded-xl`
-- **Tipografia:** DM Sans (Google Fonts)
-- **Cores dos gráficos:**
-  - NSW Demand — `slate-500`
-  - VIC Demand — `teal-500`
-  - Classe UP — `amber-500`
-  - Classe DOWN — `slate-400`
+O projeto segue TDD na camada principal de dados com **29 testes unitários independentes** cobrindo os modelos, os comportamentos de endpoint, e falha proposital de filtros.
 
----
-
-## 🐳 Comandos Docker úteis
-
+**Como rodar e certificar:**
 ```bash
-# Ver logs
-docker compose logs -f frontend
-docker compose logs -f web
-
-# Executar comandos no Django
-docker compose exec web python manage.py shell
-docker compose exec web python manage.py migrate
-
-# Reconstruir um serviço específico
-docker compose up -d --build frontend
-
-# Parar tudo e limpar volumes (apaga a BD)
-docker compose down -v
+docker compose exec web python manage.py test apps.electricity -v2
 ```
