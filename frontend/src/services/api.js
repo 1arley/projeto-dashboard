@@ -14,12 +14,34 @@ export const api = axios.create({
     headers: { 'Content-Type': 'application/json' },
 });
 
-export const getDashboardData = async () => {
+export const getDashboardData = async (params = {}) => {
     try {
-        const response = await api.get('electricity/dashboard/');
+        const response = await api.get('electricity/dashboard/', { params });
         return response.data;
     } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
         throw error;
     }
+};
+
+/* ---- Endpoints separados (RESTful) ---- */
+
+export const getKpis = async (params = {}) => {
+    const response = await api.get('electricity/dashboard/kpis/', { params });
+    return response.data;
+};
+
+export const getDemandChart = async (params = {}) => {
+    const response = await api.get('electricity/dashboard/charts/demand/', { params });
+    return response.data;
+};
+
+export const getClassDistribution = async (params = {}) => {
+    const response = await api.get('electricity/dashboard/charts/classes/', { params });
+    return response.data;
+};
+
+export const getDayDemand = async (params = {}) => {
+    const response = await api.get('electricity/dashboard/charts/days/', { params });
+    return response.data;
 };

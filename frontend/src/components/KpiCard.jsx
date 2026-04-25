@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Database } from "lucide-react";
+import { TrendingUp, TrendingDown, Database, ArrowRightLeft } from "lucide-react";
 
 /* --------------------------------------------------------------
    KpiCard — Cartão de indicador principal
@@ -26,6 +26,12 @@ const meta = {
     label: "Preço Médio VIC",
     circleBg: "bg-emerald-50",
     circleIcon: "text-emerald-600",
+  },
+  transfer: {
+    icon: ArrowRightLeft,
+    label: "Transferência Média",
+    circleBg: "bg-amber-50",
+    circleIcon: "text-amber-600",
   },
 };
 

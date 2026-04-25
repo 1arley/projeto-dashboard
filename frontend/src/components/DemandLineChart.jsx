@@ -20,10 +20,12 @@ import {
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
 
+  const dayNum = Math.round(label * 932) + 1;
+
   return (
     <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
       <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-        Período {Number(label).toFixed(3)}
+        Dia {dayNum}
       </p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2 text-sm">
@@ -73,13 +75,13 @@ export default function DemandLineChart({ data = [] }) {
             vertical={false}
           />
 
-          {/* Eixo X */}
+          {/* Eixo X — Data (0.0 ~ 1.0 → Dia 1 ~ Dia 933) */}
           <XAxis
-            dataKey="period"
+            dataKey="date"
             tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "DM Sans" }}
             tickLine={false}
             axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
-            tickFormatter={(v) => v.toFixed(2)}
+            tickFormatter={(v) => `Dia ${Math.round(v * 932) + 1}`}
           />
 
           {/* Eixo Y */}
