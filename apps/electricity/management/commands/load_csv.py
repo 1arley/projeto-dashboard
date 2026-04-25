@@ -23,6 +23,13 @@ class Command(BaseCommand):
         df['day'] = df['day'].astype(str).str.replace(r"^b'(.*)'$", r'\1', regex=True)
         df['class'] = df['class'].astype(str).str.replace(r"^b'(.*)'$", r'\1', regex=True)
 
+        # Garantir que não duplicamos dados ao re-executar
+        self.stdout.write('Limpando registros existentes...')
+        existing = ElectricityRecord.objects.count()
+        if existing:
+            ElectricityRecord.objects.all().delete()
+            self.stdout.write(f'  → {existing} registos antigos removidos')
+
         self.stdout.write('Preparando os registros para inserção no PostgreSQL...')
         records = []
         for _, row in df.iterrows():

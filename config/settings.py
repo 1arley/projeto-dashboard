@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-3np$m*4z$25h8dbz^3nd8b9)(g&v6tsmz_k)8%b!2!t48gq7j_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'web',              # hostname interno do container Django
+    'frontend',         # hostname do container frontend
+]
 
 
 # Application definition

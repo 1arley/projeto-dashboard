@@ -28,15 +28,40 @@ function LoadingSkeleton() {
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getDashboardData()
       .then((res) => setData(res))
-      .catch((err) => console.error("Erro ao carregar dados:", err))
+      .catch((err) => {
+        console.error("Erro ao carregar dados:", err);
+        setError(err.message || "Erro de conexão com a API");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSkeleton />;
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 px-4">
+        <div className="rounded-xl border border-red-100 bg-red-50 px-8 py-6 text-center shadow-sm">
+          <p className="mb-2 text-lg font-semibold text-red-800">Erro ao carregar dashboard</p>
+          <p className="text-sm text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+          >
+            Tentar novamente
+          </button>
+        </div>
+        <p className="text-xs text-gray-400">
+          Verifica se o backend está a correr em{' '}
+          <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-gray-600">localhost:8000</code>
+        </p>
+      </div>
+    );
+  }
 
   const { kpis, charts } = data ?? {};
   const kpiItems = [

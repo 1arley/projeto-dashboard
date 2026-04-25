@@ -33,10 +33,16 @@ export default function KpiCard({ type, value }) {
   const config = meta[type] ?? meta.records;
   const Icon = config.icon;
 
+  /* Fallback defensivo — evita $NaN se a API falhar ou retornar null */
+  const safeValue = (val) => {
+    const num = Number(val);
+    return Number.isFinite(num) ? num : 0;
+  };
+
   const formatted =
     type === "records"
-      ? Number(value).toLocaleString("pt-BR")
-      : `$${Number(value).toFixed(4)}`;
+      ? safeValue(value).toLocaleString("pt-BR")
+      : `$${safeValue(value).toFixed(4)}`;
 
   return (
     <article
