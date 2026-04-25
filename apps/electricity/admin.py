@@ -1,3 +1,4 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.electricity.models import ElectricityRecord
+admin.site.register(ElectricityRecord)

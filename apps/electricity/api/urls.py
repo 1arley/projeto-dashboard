@@ -1,7 +1,19 @@
 from django.urls import path
-from .views import DashboardDataView
+from .views import (
+    DashboardSummaryView,
+    DashboardKPIView,
+    DemandChartView,
+    ClassDistributionView,
+    DayDemandView,
+)
 
 urlpatterns = [
-    # O endpoint final será /api/electricity/dashboard/
-    path('dashboard/', DashboardDataView.as_view(), name='dashboard-data'),
+    # Endpoint agregado (todos os dados numa resposta)
+    path('dashboard/', DashboardSummaryView.as_view(), name='dashboard-summary'),
+
+    # Endpoints separados (RESTful)
+    path('dashboard/kpis/', DashboardKPIView.as_view(), name='dashboard-kpis'),
+    path('dashboard/charts/demand/', DemandChartView.as_view(), name='dashboard-chart-demand'),
+    path('dashboard/charts/classes/', ClassDistributionView.as_view(), name='dashboard-chart-classes'),
+    path('dashboard/charts/days/', DayDemandView.as_view(), name='dashboard-chart-days'),
 ]
