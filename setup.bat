@@ -16,8 +16,12 @@ echo [3/4] Executando as migracoes do Banco de Dados...
 docker compose exec web python manage.py migrate
 
 echo.
-echo [4/4] Carregando os dados do CSV (Isso pode levar alguns segundos)...
+echo [4/5] Carregando os dados do CSV (Isso pode levar alguns segundos)...
 docker compose exec web python manage.py load_csv
+
+echo.
+echo [5/5] Coletando arquivos estaticos...
+docker compose exec web python manage.py collectstatic --noinput
 
 echo.
 echo ===================================================
