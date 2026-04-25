@@ -15,13 +15,8 @@ export const api = axios.create({
 });
 
 export const getDashboardData = async (params = {}) => {
-    try {
-        const response = await api.get('electricity/dashboard/', { params });
-        return response.data;
-    } catch (error) {
-        console.error("Erro ao buscar dados do dashboard:", error);
-        throw error;
-    }
+    const response = await api.get('electricity/dashboard/', { params });
+    return response.data;
 };
 
 /* ---- Endpoints separados (RESTful) ---- */

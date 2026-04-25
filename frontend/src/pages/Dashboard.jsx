@@ -128,20 +128,19 @@ function InsightsPanel({ dayData, classData, kpis }) {
     }
 
     // Insight 3: Proporção UP/DOWN
-    if (classData?.length === 2) {
-      const total = classData.reduce((s, c) => s + c.total, 0);
-      const up = classData.find(c => c.demand_class === "UP");
-      if (up && total > 0) {
-        const pct = ((up.total / total) * 100).toFixed(1);
-        const dominant = up.total > total / 2 ? "UP" : "DOWN";
-        items.push({
-          icon: PieChart,
-          text: `Classe dominante: ${dominant}`,
-          detail: `UP representa ${pct}% dos registos`,
-          color: dominant === "UP" ? "text-amber-600" : "text-slate-600",
-          bg: dominant === "UP" ? "bg-amber-50" : "bg-slate-50",
-        });
-      }
+    const up = classData?.find(c => c.demand_class === "UP");
+    const down = classData?.find(c => c.demand_class === "DOWN");
+    const total = (up?.total ?? 0) + (down?.total ?? 0);
+    if (up && total > 0) {
+      const pct = ((up.total / total) * 100).toFixed(1);
+      const dominant = up.total > total / 2 ? "UP" : "DOWN";
+      items.push({
+        icon: PieChart,
+        text: `Classe dominante: ${dominant}`,
+        detail: `UP representa ${pct}% dos registos`,
+        color: dominant === "UP" ? "text-amber-600" : "text-slate-600",
+        bg: dominant === "UP" ? "bg-amber-50" : "bg-slate-50",
+      });
     }
 
     // Insight 4: Diferença de preço entre estados
