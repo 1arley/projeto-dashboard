@@ -64,17 +64,56 @@ Após executar o script de inicialização, abra o navegador:
 
 Base URL: `/api/electricity/`
 
-A API é rica em endpoints agregados para isolar a responsabilidade visual do Front-end:
+---
 
-| Método | Rota | Descrição e Filtros aceitos (`?day=`, `?class=`) |
+### Requisição bem-sucedida
+
+```bash
+curl "http://localhost:8000/api/electricity/dashboard/kpis/?day=Monday&class=UP"
+```
+
+Resposta `200 OK`:
+```json
+{
+  "total_records": 1,
+  "avg_nsw_price": 0.05,
+  "avg_vic_price": 0.03,
+  "avg_transfer": 0.01
+}
+```
+
+### Filtro inválido
+
+```bash
+curl "http://localhost:8000/api/electricity/dashboard/kpis/?day=Xyz"
+```
+
+Resposta `400 Bad Request`:
+```json
+{
+  "detail": "Filtros inválidos",
+  "errors": {
+    "day": ["Dia inválido: 'Xyz'. Valores aceites: Friday, Monday, Saturday, Sunday, Thursday, Tuesday, Wednesday"]
+  }
+}
+```
+
+### Valores aceites nos filtros
+
+| Parâmetro | Valores válidos |
+|---|---|
+| `day` | `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday` |
+| `class` | `UP`, `DOWN` |
+
+### Endpoints
+
+| Método | Rota | Descrição |
 |---|---|---|
-| GET | `/dashboard/` | Agrega e traz todo o pacote de KPIs e dados p/ gráficos. |
-| GET | `/dashboard/kpis/` | Retorna somente as 4 métricas cardinais. |
-| GET | `/dashboard/charts/demand/` | Array seqüencial temporal da demanda de NSW e VIC. |
-| GET | `/dashboard/charts/classes/` | Distribuição matemática das tags UP e DOWN. |
-| GET | `/dashboard/charts/days/` | Procura agrupada e fatiada por dia da semana. |
-
-*Exemplo de fluxo inválido:* Ao passar `?day=Invalido`, a API repudia com `400 Bad Request` descrevendo o campo falho.
+| GET | `/dashboard/` | Agrega KPIs + dados de todos os gráficos |
+| GET | `/dashboard/kpis/` | Apenas os 4 KPIs cardinais |
+| GET | `/dashboard/charts/demand/` | Série temporal NSW vs VIC |
+| GET | `/dashboard/charts/classes/` | Distribuição UP / DOWN |
+| GET | `/dashboard/charts/days/` | Procura média por dia da semana |
 
 ---
 
