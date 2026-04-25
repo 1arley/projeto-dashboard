@@ -1,0 +1,32 @@
+# ============================================================
+#  docker-compose.prod.yml — Produção (override)
+#  Uso: docker compose -f docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4
+    expose:
+      - "8000"          # só expõe internamente (não publica portas)
+    ports: []            # remove o mapeamento ":8000" do dev
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "80:80"         # nginx na porta 80
+      # - "443:443"     # descomentar com SSL
+    depends_on:
+      - web
+    restart: unless-stopped
+    # Sem volumes em produção — o build já tem os estáticos
+
+  # (opcional) Remover o mapeamento público da db em produção
+  db:
+    ports: []

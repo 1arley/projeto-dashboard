@@ -21,6 +21,7 @@ docker compose exec web python manage.py load_csv
 
 echo.
 echo ===================================================
-echo Tudo pronto! Servidor rodando :)
+echo Tudo pronto! Servidor rodando.
 echo Teste a API em: http://localhost:8000/api/electricity/dashboard/
+echo Teste o Frontend em: http://localhost:5173/
 echo ===================================================
