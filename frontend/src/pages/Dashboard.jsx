@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Zap,
   BarChart3,
@@ -232,7 +232,10 @@ export default function Dashboard() {
     return params;
   }, [filterDay, filterClass]);
 
+  const fetchIdRef = useRef(0);
+
   const fetchAll = useCallback(() => {
+    const id = ++fetchIdRef.current;
     const params = buildParams();
 
     setKpisLoading(true);
@@ -247,12 +250,14 @@ export default function Dashboard() {
 
     getDashboardData(params)
       .then((data) => {
+        if (id !== fetchIdRef.current) return;
         setKpis(data.kpis);
         setDemandData(data.charts.demand_by_date);
         setClassData(data.charts.class_distribution);
         setDayData(data.charts.day_demand);
       })
       .catch((e) => {
+        if (id !== fetchIdRef.current) return;
         const msg = e.message;
         setKpisError(msg);
         setDemandError(msg);
@@ -260,6 +265,7 @@ export default function Dashboard() {
         setDayError(msg);
       })
       .finally(() => {
+        if (id !== fetchIdRef.current) return;
         setKpisLoading(false);
         setDemandLoading(false);
         setClassLoading(false);
