@@ -1,6 +1,6 @@
 # ============================================================
 #  docker-compose.yml — Desenvolvimento (default)
-#  Para produção: docker-compose -f docker-compose.prod.yml up
+#  Para produção: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
 # ============================================================
 
 services:
