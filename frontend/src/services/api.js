@@ -19,24 +19,3 @@ export const getDashboardData = async (params = {}) => {
     return response.data;
 };
 
-/* ---- Endpoints separados (RESTful) ---- */
-
-export const getKpis = async (params = {}) => {
-    const response = await api.get('electricity/dashboard/kpis/', { params });
-    return response.data;
-};
-
-export const getDemandChart = async (params = {}) => {
-    const response = await api.get('electricity/dashboard/charts/demand/', { params });
-    return response.data;
-};
-
-export const getClassDistribution = async (params = {}) => {
-    const response = await api.get('electricity/dashboard/charts/classes/', { params });
-    return response.data;
-};
-
-export const getDayDemand = async (params = {}) => {
-    const response = await api.get('electricity/dashboard/charts/days/', { params });
-    return response.data;
-};
