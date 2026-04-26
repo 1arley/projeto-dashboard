@@ -47,7 +47,8 @@ RUN adduser -D -u 1001 appuser
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
-RUN chown -R appuser:appuser /usr/share/nginx/html /var/cache/nginx /var/run
+RUN mkdir -p /app/staticfiles \
+    && chown -R appuser:appuser /usr/share/nginx/html /var/cache/nginx /var/run /app
 
 USER appuser
 

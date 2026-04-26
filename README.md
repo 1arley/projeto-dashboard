@@ -60,6 +60,25 @@ Após executar o script de inicialização, abra o navegador:
 
 ---
 
+## 🏭 Build de Produção (Nginx + Gunicorn)
+
+Para simular o ambiente de produção localmente:
+
+```bash
+cp .env.example .env        # preencher SECRET_KEY real
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  up -d --build
+
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py load_csv
+```
+
+Acesse em [http://localhost](http://localhost) (porta 80).
+
+---
+
 ## 🧪 Estrutura da API (Endpoints)
 
 Base URL: `/api/electricity/`

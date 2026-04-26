@@ -195,6 +195,23 @@ class DayDemandViewTests(ElectricityAPITestCase):
         response = self.client.get('/api/electricity/dashboard/charts/days/')
         self.assertEqual(len(response.json()), 3)
 
+    def test_days_filter_by_class(self):
+        """Filtrar por UP retorna Monday e Tuesday (2 registos)."""
+        response = self.client.get(
+            '/api/electricity/dashboard/charts/days/',
+            {'class': 'UP'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(len(data), 2)
+
+    def test_days_invalid_class_returns_400(self):
+        response = self.client.get(
+            '/api/electricity/dashboard/charts/days/',
+            {'class': 'INVALID'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
 # ==================================================================
 # Summary (endpoint agregado)
