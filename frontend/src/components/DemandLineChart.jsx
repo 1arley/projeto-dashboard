@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,19 +10,11 @@ import {
   Legend,
 } from "recharts";
 
-/* --------------------------------------------------------------
-   DemandLineChart — Evolução NSW vs VIC
-   - Grid tracejada e clara (strokeDasharray="3 3")
-   - Cores dessaturadas: NSW = slate, VIC = teal
-   - Tooltip: bg-white, border sutil, rounded-xl
-   -------------------------------------------------------------- */
-
-/* Tooltip customizado — usa os dados reais para mapear o índice */
-function CustomTooltip({ active, payload, label, data }) {
+function CustomTooltip({ active, payload, label, indexMap }) {
   if (!active || !payload?.length) return null;
 
   const numLabel = Number(label);
-  const idx = data?.findIndex(d => Math.abs(d.date - numLabel) < 1e-9) ?? -1;
+  const idx = indexMap?.get(numLabel) ?? -1;
   const display = idx >= 0 ? `Período ${idx + 1}` : numLabel.toFixed(3);
 
   return (
@@ -45,7 +38,6 @@ function CustomTooltip({ active, payload, label, data }) {
   );
 }
 
-/* Legend customizada */
 function CustomLegend({ payload }) {
   return (
     <div className="mt-4 flex items-center justify-center gap-6 text-xs">
@@ -63,6 +55,26 @@ function CustomLegend({ payload }) {
 }
 
 export default function DemandLineChart({ data = [] }) {
+  const indexMap = useMemo(() => {
+    const map = new Map();
+    data.forEach((d, i) => map.set(d.date, i));
+    return map;
+  }, [data]);
+
+  const tickFormatter = useMemo(
+    () => (v) => {
+      const numV = Number(v);
+      const i = indexMap.get(numV);
+      return i !== undefined ? `P${i + 1}` : numV.toFixed(3);
+    },
+    [indexMap]
+  );
+
+  const tooltipContent = useMemo(
+    () => <CustomTooltip indexMap={indexMap} />,
+    [indexMap]
+  );
+
   return (
     <div className="h-full w-full">
       <ResponsiveContainer width="100%" height={320}>
@@ -70,14 +82,12 @@ export default function DemandLineChart({ data = [] }) {
           data={data}
           margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
         >
-          {/* Grid horizontal tracejada e clara */}
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#e5e7eb"        /* gray-200 */
+            stroke="#e5e7eb"
             vertical={false}
           />
 
-          {/* Eixo X — Data normalizada → índice real no array */}
           <XAxis
             dataKey="date"
             tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "DM Sans" }}
@@ -85,14 +95,9 @@ export default function DemandLineChart({ data = [] }) {
             axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
             tickCount={12}
             interval="preserveStartEnd"
-            tickFormatter={(v) => {
-              const numV = Number(v);
-              const i = data.findIndex(d => Math.abs(d.date - numV) < 1e-9);
-              return i >= 0 ? `P${i + 1}` : numV.toFixed(3);
-            }}
+            tickFormatter={tickFormatter}
           />
 
-          {/* Eixo Y */}
           <YAxis
             tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "DM Sans" }}
             tickLine={false}
@@ -100,10 +105,9 @@ export default function DemandLineChart({ data = [] }) {
             tickFormatter={(v) => v.toFixed(2)}
           />
 
-          <Tooltip content={<CustomTooltip data={data} />} cursor={false} />
+          <Tooltip content={tooltipContent} cursor={false} />
           <Legend content={<CustomLegend />} />
 
-          {/* NSW — slate-500 (dessaturado, profissional) */}
           <Line
             type="monotone"
             dataKey="avg_nsw_demand"
@@ -117,9 +121,9 @@ export default function DemandLineChart({ data = [] }) {
               stroke: "#ffffff",
               strokeWidth: 2,
             }}
+            animationDuration={300}
           />
 
-          {/* VIC — teal-500 (verde-água, dessaturado) */}
           <Line
             type="monotone"
             dataKey="avg_vic_demand"
@@ -133,6 +137,7 @@ export default function DemandLineChart({ data = [] }) {
               stroke: "#ffffff",
               strokeWidth: 2,
             }}
+            animationDuration={300}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -9,9 +10,6 @@ import {
 
 /* --------------------------------------------------------------
    DayDemandChart — Procura Média por Dia da Semana (Barras Horizontais)
-   - Ordenado por dia (Monday → Sunday)
-   - Cores progressivas: mais claro no início, mais escuro no fim
-   - NSW + VIC lado a lado
    -------------------------------------------------------------- */
 
 const DAY_ORDER = [
@@ -49,9 +47,12 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function DayDemandChart({ data = [] }) {
-  /* Ordenar Monday → Sunday */
-  const sorted = [...data].sort(
-    (a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)
+  const sorted = useMemo(
+    () =>
+      [...data].sort(
+        (a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)
+      ),
+    [data]
   );
 
   return (
@@ -85,6 +86,7 @@ export default function DayDemandChart({ data = [] }) {
             name="NSW Demand"
             fill={COLORS.NSW}
             radius={[0, 4, 4, 0]}
+            animationDuration={300}
           />
 
           <Bar
@@ -92,6 +94,7 @@ export default function DayDemandChart({ data = [] }) {
             name="VIC Demand"
             fill={COLORS.VIC}
             radius={[0, 4, 4, 0]}
+            animationDuration={300}
           />
         </BarChart>
       </ResponsiveContainer>

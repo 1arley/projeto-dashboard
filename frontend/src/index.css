@@ -2,29 +2,37 @@
 
 /* ============================================================
    ENERGY PULSE — Design System
-   - Fundo: gray-50
-   - Cartões: white + border-gray-100 + shadow-sm + rounded-xl
-   - Texto primário: gray-900 (valores)
-   - Texto secundário: gray-500 (labels)
    ============================================================ */
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 
-  /* Cores dos gráficos (dessaturadas, propositais) */
-  --color-chart-nsw: #64748b;     /* slate-500 → NSW */
-  --color-chart-vic: #14b8a6;     /* teal-500  → VIC */
-  --color-chart-up: #f59e0b;      /* amber-500 → destaque elegante */
-  --color-chart-down: #94a3b8;    /* slate-400 → neutro */
+  /* Chart colors */
+  --color-chart-nsw: #64748b;
+  --color-chart-vic: #14b8a6;
+  --color-chart-up: #f59e0b;
+  --color-chart-down: #94a3b8;
+
+  /* Layout tokens */
+  --dashboard-max-width: 1280px;
+  --dashboard-chart-height: 320px;
+
+  /* Animation tokens */
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
 }
 
 /* --- Globais --- */
 body {
   font-family: var(--font-sans);
-  background-color: #f9fafb; /* gray-50 */
-  color: #111827; /* gray-900 */
+  color: #111827;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f9fafb;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(100, 116, 139, 0.04), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(20, 184, 166, 0.03), transparent);
+  background-attachment: fixed;
 }
 
 /* --- Animações --- */
@@ -34,7 +42,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease-out both;
+  animation: var(--animate-fade-in);
 }
 
 @keyframes shimmer {
@@ -50,5 +58,28 @@ body {
     #f1f5f9 55%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
+  animation: var(--animate-shimmer);
+}
+
+/* --- Glow do ícone do header --- */
+.header-icon-glow {
+  box-shadow:
+    0 0 15px rgba(249, 250, 251, 0.1),
+    0 0 30px rgba(100, 116, 139, 0.06);
+}
+
+/* --- Scrollbar sutil --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
 }

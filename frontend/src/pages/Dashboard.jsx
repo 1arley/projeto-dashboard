@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Zap,
@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Lightbulb,
   ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import KpiCard from "../components/KpiCard";
@@ -21,11 +22,6 @@ import {
   getClassDistribution,
   getDayDemand,
 } from "../services/api";
-
-/* --------------------------------------------------------------
-   Dashboard — Página principal
-   Cada bloco carrega INDEPENDENTEMENTE via React Query.
-   -------------------------------------------------------------- */
 
 const DAYS = [
   "Monday", "Tuesday", "Wednesday", "Thursday",
@@ -40,14 +36,12 @@ const DAY_PT = {
 const CLASSES = ["UP", "DOWN"];
 
 /* ==============================================================
-   Skeletons com shimmer — carregamento elegante e visível
+   Skeletons com shimmer
    ============================================================== */
 
 function SkeletonBar({ width = "w-full", height = "h-3" }) {
   return (
-    <div
-      className={`skeleton-shimmer rounded-md ${height} ${width}`}
-    />
+    <div className={`skeleton-shimmer rounded-md ${height} ${width}`} />
   );
 }
 
@@ -75,11 +69,7 @@ function ChartSkeleton({ height = "h-[320px]", delay = 0 }) {
         <SkeletonBar width="w-4" height="h-4" />
         <SkeletonBar width="w-36" height="h-3" />
       </div>
-      <div
-        className={`skeleton-shimmer relative overflow-hidden rounded-lg ${height}`}
-        style={{ borderRadius: "0.5rem" }}
-      >
-        {/* Linhas decorativas simulando um gráfico no skeleton */}
+      <div className={`skeleton-shimmer relative overflow-hidden rounded-lg ${height}`}>
         <svg
           className="absolute inset-0 h-full w-full opacity-30"
           viewBox="0 0 400 200"
@@ -106,6 +96,8 @@ function ChartSkeleton({ height = "h-[320px]", delay = 0 }) {
   );
 }
 
+const BAR_SEEDS = [42, 68, 53, 71, 47, 62, 55];
+
 function BarSkeleton({ delay = 0 }) {
   return (
     <div
@@ -117,12 +109,12 @@ function BarSkeleton({ delay = 0 }) {
         <SkeletonBar width="w-36" height="h-3" />
       </div>
       <div className="flex h-[320px] items-end justify-around gap-2 px-4">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {BAR_SEEDS.map((seed, i) => (
           <div key={i} className="flex w-full flex-col items-center gap-1.5">
             <div
               className="skeleton-shimmer w-full rounded-t-md"
               style={{
-                height: `${40 + Math.random() * 60}%`,
+                height: `${seed}%`,
                 animationDelay: `${delay + i * 0.05}s`,
               }}
             />
@@ -134,7 +126,7 @@ function BarSkeleton({ delay = 0 }) {
 }
 
 /* ==============================================================
-   Loading / Error blocks
+   Error / Empty blocks
    ============================================================== */
 
 function ErrorBlock({ message }) {
@@ -145,11 +137,19 @@ function ErrorBlock({ message }) {
   );
 }
 
+function EmptyBlock({ message }) {
+  return (
+    <div className="flex animate-fade-in items-center justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 py-6 text-center text-xs text-gray-400">
+      {message || "Nenhum dado encontrado"}
+    </div>
+  );
+}
+
 /* ==============================================================
    Filtro dropdown
    ============================================================== */
 
-function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id }) {
+function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id, label }) {
   const isActive = value !== "";
   return (
     <div className="relative flex items-center gap-2">
@@ -157,11 +157,14 @@ function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id })
         size={14}
         strokeWidth={1.6}
         className={isActive ? "text-gray-700" : "text-gray-300"}
+        aria-hidden="true"
       />
+      <label htmlFor={id} className="sr-only">{label}</label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
         className={`appearance-none rounded-lg border bg-white px-3 py-1.5 pr-7 text-xs font-medium
           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300
           ${isActive ? "border-gray-300 text-gray-800" : "border-gray-200 text-gray-400"}`}
@@ -171,7 +174,7 @@ function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id })
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
-      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
         <ChevronDown size={10} strokeWidth={1.5} />
       </span>
     </div>
@@ -187,24 +190,23 @@ function InsightsPanel({ dayData, classData, kpis }) {
     const items = [];
 
     if (dayData?.length > 0) {
-      const maxDay = dayData.reduce((max, d) =>
-        d.avg_nsw_demand > max.avg_nsw_demand ? d : max, dayData[0]);
+      let maxNSW = dayData[0];
+      let maxVIC = dayData[0];
+      for (const d of dayData) {
+        if (d.avg_nsw_demand > maxNSW.avg_nsw_demand) maxNSW = d;
+        if (d.avg_vic_demand > maxVIC.avg_vic_demand) maxVIC = d;
+      }
       items.push({
         icon: TrendingUp,
-        text: `${DAY_PT[maxDay.day] || maxDay.day} é o dia com maior demanda NSW`,
-        detail: `Média: ${maxDay.avg_nsw_demand.toFixed(4)}`,
+        text: `${DAY_PT[maxNSW.day] || maxNSW.day} e o dia com maior demanda NSW`,
+        detail: `Media: ${maxNSW.avg_nsw_demand.toFixed(4)}`,
         color: "text-blue-600",
         bg: "bg-blue-50",
       });
-    }
-
-    if (dayData?.length > 0) {
-      const maxVIC = dayData.reduce((max, d) =>
-        d.avg_vic_demand > max.avg_vic_demand ? d : max, dayData[0]);
       items.push({
         icon: TrendingUp,
-        text: `${DAY_PT[maxVIC.day] || maxVIC.day} é o dia com maior demanda VIC`,
-        detail: `Média: ${maxVIC.avg_vic_demand.toFixed(4)}`,
+        text: `${DAY_PT[maxVIC.day] || maxVIC.day} e o dia com maior demanda VIC`,
+        detail: `Media: ${maxVIC.avg_vic_demand.toFixed(4)}`,
         color: "text-teal-600",
         bg: "bg-teal-50",
       });
@@ -326,12 +328,17 @@ export default function Dashboard() {
   });
 
   /* ---- KPIs ---- */
-  const kpiItems = [
+  const kpiItems = useMemo(() => [
     { type: "records", value: kpisQuery.data?.total_records },
     { type: "price_nsw", value: kpisQuery.data?.avg_nsw_price },
     { type: "price_vic", value: kpisQuery.data?.avg_vic_price },
     { type: "transfer", value: kpisQuery.data?.avg_transfer },
-  ];
+  ], [kpisQuery.data]);
+
+  const handleClearFilters = useCallback(() => {
+    setFilterDay("");
+    setFilterClass("");
+  }, []);
 
   /* ---- timestamp da última actualização bem-sucedida ---- */
   const lastUpdate = kpisQuery.dataUpdatedAt || demandQuery.dataUpdatedAt;
@@ -342,7 +349,7 @@ export default function Dashboard() {
       {/* ============ HEADER ============ */}
       <header className="mb-8 flex animate-fade-in items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white">
+          <div className="header-icon-glow flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white">
             <Zap size={20} strokeWidth={2} />
           </div>
           <div>
@@ -386,23 +393,26 @@ export default function Dashboard() {
           onChange={setFilterDay}
           options={DAYS}
           placeholder="Todos os dias"
+          label="Filtrar por dia da semana"
         />
 
         <div className="h-4 w-px bg-gray-200" aria-hidden />
 
         <FilterSelect
           id="filter-class"
-          icon={Tag}
+          icon={SlidersHorizontal}
           value={filterClass}
           onChange={setFilterClass}
           options={CLASSES}
           placeholder="Todas as classes"
+          label="Filtrar por classe de demanda"
         />
 
         {(filterDay || filterClass) && (
           <button
             id="clear-filters"
-            onClick={() => { setFilterDay(""); setFilterClass(""); }}
+            onClick={handleClearFilters}
+            aria-label="Limpar todos os filtros"
             className="ml-1 rounded-full border border-gray-200 px-3 py-1 text-[11px] font-medium
                        text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-600"
           >
@@ -457,12 +467,14 @@ export default function Dashboard() {
                 Evolução da Demanda
               </h2>
             </div>
-            {demandQuery.isLoading
-              ? <ChartSkeleton height="h-[320px]" delay={0.25} />
-              : demandQuery.isError
-                ? <ErrorBlock message={demandQuery.error?.message} />
-                : <DemandLineChart data={demandQuery.data} />
-            }
+        {demandQuery.isLoading
+        ? <ChartSkeleton height="h-[320px]" delay={0.25} />
+        : demandQuery.isError
+        ? <ErrorBlock message={demandQuery.error?.message} />
+        : demandQuery.data?.length === 0 && (filterDay || filterClass)
+        ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
+        : <DemandLineChart data={demandQuery.data} />
+        }
           </div>
         </div>
 
@@ -478,12 +490,12 @@ export default function Dashboard() {
                 Distribuição UP / DOWN
               </h2>
             </div>
-            {classQuery.isLoading
-              ? <ChartSkeleton height="h-[320px]" delay={0.35} />
-              : classQuery.isError
-                ? <ErrorBlock message={classQuery.error?.message} />
-                : <ClassPieChart data={classQuery.data} />
-            }
+        {classQuery.isLoading
+        ? <ChartSkeleton height="h-[320px]" delay={0.35} />
+        : classQuery.isError
+        ? <ErrorBlock message={classQuery.error?.message} />
+        : <ClassPieChart data={classQuery.data} />
+        }
           </div>
         </div>
 
@@ -499,12 +511,12 @@ export default function Dashboard() {
                 Procura Média por Dia da Semana
               </h2>
             </div>
-            {dayQuery.isLoading
-              ? <BarSkeleton delay={0.45} />
-              : dayQuery.isError
-                ? <ErrorBlock message={dayQuery.error?.message} />
-                : <DayDemandChart data={dayQuery.data} />
-            }
+        {dayQuery.isLoading
+        ? <BarSkeleton delay={0.45} />
+        : dayQuery.isError
+        ? <ErrorBlock message={dayQuery.error?.message} />
+        : <DayDemandChart data={dayQuery.data} />
+        }
           </div>
         </div>
       </section>

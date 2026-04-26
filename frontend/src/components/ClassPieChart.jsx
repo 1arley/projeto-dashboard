@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -45,17 +46,28 @@ function CenterLabel({ total }) {
 }
 
 const COLORS = {
-  UP: "#f59e0b",   /* amber-500 — destaque elegante */
-  DOWN: "#94a3b8", /* slate-400 — neutro */
+  UP: "#f59e0b",
+  DOWN: "#94a3b8",
 };
 
 export default function ClassPieChart({ data = [] }) {
-  const total = data.reduce((acc, d) => acc + d.total, 0);
+  const { total, enriched } = useMemo(() => {
+    const t = data.reduce((acc, d) => acc + d.total, 0);
+    const safe = t > 0 ? t : 1;
+    const enr = data.map((d) => ({
+      ...d,
+      percent: ((d.total / safe) * 100).toFixed(1),
+    }));
+    return { total: t, enriched: enr };
+  }, [data]);
 
-  const enriched = data.map((d) => ({
-    ...d,
-    percent: ((d.total / total) * 100).toFixed(1),
-  }));
+  if (total === 0) {
+    return (
+      <div className="flex h-[280px] items-center justify-center text-xs text-gray-400">
+        Sem dados para exibir
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
@@ -71,8 +83,8 @@ export default function ClassPieChart({ data = [] }) {
             outerRadius={110}
             paddingAngle={4}
             strokeWidth={0}
-            animationBegin={200}
-            animationDuration={700}
+            animationBegin={0}
+            animationDuration={300}
           >
             {enriched.map((entry) => (
               <Cell
@@ -85,10 +97,8 @@ export default function ClassPieChart({ data = [] }) {
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Rótulo central */}
       <CenterLabel total={total} />
 
-      {/* Legenda abaixo */}
       <div className="absolute -bottom-1 flex items-center gap-6 text-xs">
         {enriched.map((entry) => (
           <div key={entry.demand_class} className="flex items-center gap-2">

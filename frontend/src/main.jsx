@@ -7,9 +7,11 @@ import App from './App.jsx'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 2,       // 2 min — não refetch se usado recentemente
-      retry: 1,                         // 1 tentativa extra em caso de erro
-      refetchOnWindowFocus: false,      // desligado para dashboard
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      refetchOnWindowFocus: false,
     },
   },
 });
