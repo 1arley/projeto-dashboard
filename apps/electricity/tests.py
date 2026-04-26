@@ -98,6 +98,21 @@ class KPIViewTests(ElectricityAPITestCase):
         response = self.client.get('/api/electricity/dashboard/kpis/', {'class': 'INVALID'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_kpis_empty_filter_returns_consistent(self):
+        """Filtro com day='' nao deve quebrar a query."""
+        response = self.client.get('/api/electricity/dashboard/kpis/', {'day': ''})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['total_records'], 4)
+
+    def test_kpis_numeric_values_are_rounded(self):
+        """Verifica que precos sao retornados com ate 4 casas decimais."""
+        response = self.client.get('/api/electricity/dashboard/kpis/')
+        data = response.json()
+        for key in ('avg_nsw_price', 'avg_vic_price', 'avg_transfer'):
+            val = data[key]
+            self.assertIsInstance(val, (int, float))
+            self.assertGreaterEqual(val, 0)
+
 
 # ==================================================================
 # Demand Chart
@@ -126,11 +141,23 @@ class DemandChartViewTests(ElectricityAPITestCase):
     def test_demand_filter_by_day(self):
         response = self.client.get('/api/electricity/dashboard/charts/demand/', {'day': 'Tuesday'})
         data = response.json()
-        self.assertEqual(len(data), 1)  # Apenas date=0.1
+        self.assertEqual(len(data), 1)
 
     def test_demand_invalid_day_returns_400(self):
         response = self.client.get('/api/electricity/dashboard/charts/demand/', {'day': 'Xyz'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_demand_sorted_by_date(self):
+        """As datas devem vir ordenadas crescente."""
+        response = self.client.get('/api/electricity/dashboard/charts/demand/')
+        dates = [pt['date'] for pt in response.json()]
+        self.assertEqual(dates, sorted(dates))
+
+    def test_demand_nonexistent_filter_returns_empty(self):
+        """Filtrar por um dia sem dados deve retornar lista vazia."""
+        response = self.client.get('/api/electricity/dashboard/charts/demand/', {'day': 'Friday'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), [])
 
 
 # ==================================================================
@@ -162,6 +189,14 @@ class ClassDistributionViewTests(ElectricityAPITestCase):
         self.assertEqual(data['UP'], 1)
         self.assertEqual(data['DOWN'], 1)
 
+    def test_classes_filter_returns_same_structure(self):
+        """Mesmo com filtro, cada item deve ter demand_class e total."""
+        response = self.client.get('/api/electricity/dashboard/charts/classes/', {'class': 'UP'})
+        for item in response.json():
+            self.assertIn('demand_class', item)
+            self.assertIn('total', item)
+            self.assertIsInstance(item['total'], int)
+
 
 # ==================================================================
 # Day Demand
@@ -191,12 +226,10 @@ class DayDemandViewTests(ElectricityAPITestCase):
             self.assertIn('avg_vic_demand', item)
 
     def test_days_count(self):
-        """Temos dados para 3 dias distintos (1, 2, 3)."""
         response = self.client.get('/api/electricity/dashboard/charts/days/')
         self.assertEqual(len(response.json()), 3)
 
     def test_days_filter_by_class(self):
-        """Filtrar por UP retorna Monday e Tuesday (2 registos)."""
         response = self.client.get(
             '/api/electricity/dashboard/charts/days/',
             {'class': 'UP'}
@@ -211,6 +244,13 @@ class DayDemandViewTests(ElectricityAPITestCase):
             {'class': 'INVALID'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_days_sorted_by_day_number(self):
+        """Monday(1) deve vir antes de Tuesday(2)."""
+        response = self.client.get('/api/electricity/dashboard/charts/days/')
+        days = [d['day'] for d in response.json()]
+        expected_order = ['Monday', 'Tuesday', 'Wednesday']
+        self.assertEqual(days, expected_order)
 
 
 # ==================================================================
@@ -264,6 +304,26 @@ class DashboardSummaryViewTests(ElectricityAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['kpis']['total_records'], 1)
 
+    def test_summary_output_ids_match_individual_endpoints(self):
+        """KPIs do summary devem igualar os do endpoint /kpis/."""
+        s = self.client.get('/api/electricity/dashboard/')
+        k = self.client.get('/api/electricity/dashboard/kpis/')
+        self.assertEqual(s.json()['kpis'], k.json())
+
+
+# ==================================================================
+# Health Check
+# ==================================================================
+
+class HealthCheckViewTests(TestCase):
+    def test_health_returns_200(self):
+        response = self.client.get('/api/electricity/health/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_health_returns_ok(self):
+        response = self.client.get('/api/electricity/health/')
+        self.assertEqual(response.json(), {"status": "ok"})
+
 
 # ==================================================================
 # Modelo
@@ -293,5 +353,25 @@ class ElectricityRecordModelTests(TestCase):
             transfer=0.01, demand_class="UP"
         )
         records = list(ElectricityRecord.objects.all())
-        self.assertEqual(records[0].pk, r2.pk)  # 0.1 vem antes de 0.9
+        self.assertEqual(records[0].pk, r2.pk)
         self.assertEqual(records[1].pk, r1.pk)
+
+    def test_day_field_stores_string_number(self):
+        """Verifica que day e armazenado como string numerica."""
+        record = ElectricityRecord.objects.create(
+            date=0.5, day="1", period=0.0,
+            nsw_price=0.01, nsw_demand=0.01,
+            vic_price=0.01, vic_demand=0.01,
+            transfer=0.01, demand_class="UP"
+        )
+        fetched = ElectricityRecord.objects.get(pk=record.pk)
+        self.assertEqual(fetched.day, "1")
+
+    def test_date_field_is_indexed(self):
+        """Verifica que o campo date esta indexado."""
+        from django.db import connections
+        field = ElectricityRecord._meta.get_field('date')
+        self.assertTrue(
+            field.db_index,
+            "Campo 'date' deveria ter db_index=True"
+        )

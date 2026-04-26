@@ -4,6 +4,11 @@ from rest_framework import status
 from django.db.models import Avg, Count
 
 from apps.electricity.models import ElectricityRecord
+
+
+class HealthCheckView(APIView):
+    def get(self, request):
+        return Response({"status": "ok"})
 from .serializers import (
     KpiSerializer,
     DemandPointSerializer,
@@ -59,17 +64,26 @@ def _build_queryset(filters):
 
 
 def _get_kpi_data(qs):
-    """Retorna dict com total_records + 3 médias agregadas."""
+    """Retorna dict com total_records + 3 medias agregadas."""
     agg = qs.aggregate(
         total_records=Count('id'),
         avg_nsw_price=Avg('nsw_price'),
         avg_vic_price=Avg('vic_price'),
         avg_transfer=Avg('transfer'),
     )
+    total = agg.get('total_records') or 0
+    if total == 0:
+        return {
+            "total_records": 0,
+            "avg_nsw_price": 0,
+            "avg_vic_price": 0,
+            "avg_transfer": 0,
+        }
     return {
-        "total_records": agg['total_records'] or 0,
-        **{k: round(v, 4) if v is not None else 0 
-           for k, v in agg.items() if k != 'total_records'},
+        "total_records": total,
+        "avg_nsw_price": round(agg['avg_nsw_price'], 4) if agg['avg_nsw_price'] is not None else 0,
+        "avg_vic_price": round(agg['avg_vic_price'], 4) if agg['avg_vic_price'] is not None else 0,
+        "avg_transfer": round(agg['avg_transfer'], 4) if agg['avg_transfer'] is not None else 0,
     }
 
 
@@ -79,7 +93,7 @@ def _get_class_distribution(qs):
 
 
 def _get_demand_by_date(qs):
-    """Retorna queryset anotado com médias NSW/VIC agrupadas por date."""
+    """Retorna queryset anotado com medias NSW/VIC agrupadas por date."""
     return qs.values('date').annotate(
         avg_nsw_demand=Avg('nsw_demand'),
         avg_vic_demand=Avg('vic_demand'),
@@ -87,7 +101,7 @@ def _get_demand_by_date(qs):
 
 
 def _get_day_demand(qs):
-    """Retorna lista enriquecida com nome do dia e médias NSW/VIC."""
+    """Retorna lista enriquecida com nome do dia e medias NSW/VIC."""
     rows = qs.values('day').annotate(
         avg_nsw_demand=Avg('nsw_demand'),
         avg_vic_demand=Avg('vic_demand'),
@@ -95,8 +109,8 @@ def _get_day_demand(qs):
     return [
         {
             "day": DAY_NUMBER_TO_NAME.get(r["day"], r["day"]),
-            "avg_nsw_demand": round(r["avg_nsw_demand"], 4),
-            "avg_vic_demand": round(r["avg_vic_demand"], 4),
+            "avg_nsw_demand": round(r["avg_nsw_demand"], 4) if r["avg_nsw_demand"] is not None else 0,
+            "avg_vic_demand": round(r["avg_vic_demand"], 4) if r["avg_vic_demand"] is not None else 0,
         }
         for r in rows
     ]
