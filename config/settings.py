@@ -33,6 +33,10 @@ ALLOWED_HOSTS = [
     'frontend',         # hostname do container frontend
 ]
 
+EXTRA_HOST = os.environ.get('ALLOWED_HOST', '')
+if EXTRA_HOST:
+    ALLOWED_HOSTS.append(EXTRA_HOST)
+
 
 # Application definition
 
