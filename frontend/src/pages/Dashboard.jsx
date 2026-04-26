@@ -14,12 +14,7 @@ import KpiCard from "../components/KpiCard";
 import DemandLineChart from "../components/DemandLineChart";
 import ClassPieChart from "../components/ClassPieChart";
 import DayDemandChart from "../components/DayDemandChart";
-import {
-  getKpis,
-  getDemandChart,
-  getClassDistribution,
-  getDayDemand,
-} from "../services/api";
+import { getDashboardData } from "../services/api";
 
 /* --------------------------------------------------------------
    Dashboard — Página principal
@@ -240,39 +235,37 @@ export default function Dashboard() {
   const fetchAll = useCallback(() => {
     const params = buildParams();
 
-    /* KPIs */
     setKpisLoading(true);
-    setKpisError(null);
-    getKpis(params)
-      .then(setKpis)
-      .catch((e) => setKpisError(e.message))
-      .finally(() => setKpisLoading(false));
-
-    /* Gráfico de linhas */
     setDemandLoading(true);
-    setDemandError(null);
-    getDemandChart(params)
-      .then(setDemandData)
-      .catch((e) => setDemandError(e.message))
-      .finally(() => setDemandLoading(false));
-
-    /* Donut */
     setClassLoading(true);
-    setClassError(null);
-    getClassDistribution(params)
-      .then(setClassData)
-      .catch((e) => setClassError(e.message))
-      .finally(() => setClassLoading(false));
-
-    /* Barras por dia */
     setDayLoading(true);
+    
+    setKpisError(null);
+    setDemandError(null);
+    setClassError(null);
     setDayError(null);
-    getDayDemand(params)
-      .then(setDayData)
-      .catch((e) => setDayError(e.message))
-      .finally(() => setDayLoading(false));
 
-    setLastUpdate(new Date());
+    getDashboardData(params)
+      .then((data) => {
+        setKpis(data.kpis);
+        setDemandData(data.charts.demand_by_date);
+        setClassData(data.charts.class_distribution);
+        setDayData(data.charts.day_demand);
+      })
+      .catch((e) => {
+        const msg = e.message;
+        setKpisError(msg);
+        setDemandError(msg);
+        setClassError(msg);
+        setDayError(msg);
+      })
+      .finally(() => {
+        setKpisLoading(false);
+        setDemandLoading(false);
+        setClassLoading(false);
+        setDayLoading(false);
+        setLastUpdate(new Date());
+      });
   }, [buildParams]);
 
   /* Correr ao montar e quando os filtros mudam */
