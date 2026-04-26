@@ -54,8 +54,7 @@ export default function KpiCard({ type, value }) {
     <article
       className="group relative overflow-hidden rounded-xl border border-gray-100
                  bg-white px-6 py-5 shadow-sm transition-all duration-300
-                 hover:shadow-md hover:-translate-y-0.5 animate-fade-in"
-      style={{ animationDelay: "0.1s", animationFillMode: "both" }}
+                 hover:shadow-md hover:-translate-y-0.5"
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">

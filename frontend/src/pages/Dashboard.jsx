@@ -1,24 +1,30 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Zap,
   BarChart3,
   PieChart,
   CalendarDays,
   Tag,
-  RefreshCw,
   TrendingUp,
   Lightbulb,
+  ChevronDown,
 } from "lucide-react";
 
 import KpiCard from "../components/KpiCard";
 import DemandLineChart from "../components/DemandLineChart";
 import ClassPieChart from "../components/ClassPieChart";
 import DayDemandChart from "../components/DayDemandChart";
-import { getDashboardData } from "../services/api";
+import {
+  getKpis,
+  getDemandChart,
+  getClassDistribution,
+  getDayDemand,
+} from "../services/api";
 
 /* --------------------------------------------------------------
    Dashboard — Página principal
-   Cada bloco (KPIs, gráficos) carrega independentemente.
+   Cada bloco carrega INDEPENDENTEMENTE via React Query.
    -------------------------------------------------------------- */
 
 const DAYS = [
@@ -34,20 +40,106 @@ const DAY_PT = {
 const CLASSES = ["UP", "DOWN"];
 
 /* ==============================================================
-   Componentes de loading / erro (compactos, por bloco)
+   Skeletons com shimmer — carregamento elegante e visível
    ============================================================== */
 
-function MiniSkeleton({ height = "h-24" }) {
+function SkeletonBar({ width = "w-full", height = "h-3" }) {
   return (
-    <div className={`flex items-center justify-center ${height} rounded-xl border border-gray-100 bg-white`}>
-      <RefreshCw size={16} className="animate-spin text-gray-300" />
+    <div
+      className={`skeleton-shimmer rounded-md ${height} ${width}`}
+    />
+  );
+}
+
+function KpiSkeleton({ delay = 0 }) {
+  return (
+    <div
+      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
+      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+    >
+      <div className="space-y-3">
+        <SkeletonBar width="w-20" height="h-3" />
+        <SkeletonBar width="w-36" height="h-8" />
+      </div>
     </div>
   );
 }
 
+function ChartSkeleton({ height = "h-[320px]", delay = 0 }) {
+  return (
+    <div
+      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
+      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+    >
+      <div className="mb-5 flex items-center gap-2">
+        <SkeletonBar width="w-4" height="h-4" />
+        <SkeletonBar width="w-36" height="h-3" />
+      </div>
+      <div
+        className={`skeleton-shimmer relative overflow-hidden rounded-lg ${height}`}
+        style={{ borderRadius: "0.5rem" }}
+      >
+        {/* Linhas decorativas simulando um gráfico no skeleton */}
+        <svg
+          className="absolute inset-0 h-full w-full opacity-30"
+          viewBox="0 0 400 200"
+          preserveAspectRatio="none"
+        >
+          <polyline
+            points="0,150 50,120 100,160 150,90 200,110 250,60 300,80 350,30 400,50"
+            fill="none"
+            stroke="#d1d5db"
+            strokeWidth="2"
+            vectorEffect="non-scaling-stroke"
+          />
+          <polyline
+            points="0,130 50,100 100,140 150,70 200,90 250,40 300,60 350,10 400,30"
+            fill="none"
+            stroke="#d1d5db"
+            strokeWidth="2"
+            vectorEffect="non-scaling-stroke"
+            className="opacity-50"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function BarSkeleton({ delay = 0 }) {
+  return (
+    <div
+      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
+      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+    >
+      <div className="mb-5 flex items-center gap-2">
+        <SkeletonBar width="w-4" height="h-4" />
+        <SkeletonBar width="w-36" height="h-3" />
+      </div>
+      <div className="flex h-[320px] items-end justify-around gap-2 px-4">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="flex w-full flex-col items-center gap-1.5">
+            <div
+              className="skeleton-shimmer w-full rounded-t-md"
+              style={{
+                height: `${40 + Math.random() * 60}%`,
+                animationDelay: `${delay + i * 0.05}s`,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ==============================================================
+   Loading / Error blocks
+   ============================================================== */
+
 function ErrorBlock({ message }) {
   return (
-    <div className="flex items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center text-xs text-red-600">
+    <div className="flex animate-fade-in items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center text-xs text-red-600">
       {message || "Erro ao carregar"}
     </div>
   );
@@ -80,9 +172,7 @@ function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id })
         ))}
       </select>
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+        <ChevronDown size={10} strokeWidth={1.5} />
       </span>
     </div>
   );
@@ -96,7 +186,6 @@ function InsightsPanel({ dayData, classData, kpis }) {
   const insights = useMemo(() => {
     const items = [];
 
-    // Insight 1: Dia com maior demanda NSW
     if (dayData?.length > 0) {
       const maxDay = dayData.reduce((max, d) =>
         d.avg_nsw_demand > max.avg_nsw_demand ? d : max, dayData[0]);
@@ -109,7 +198,6 @@ function InsightsPanel({ dayData, classData, kpis }) {
       });
     }
 
-    // Insight 2: Dia com maior demanda VIC
     if (dayData?.length > 0) {
       const maxVIC = dayData.reduce((max, d) =>
         d.avg_vic_demand > max.avg_vic_demand ? d : max, dayData[0]);
@@ -122,7 +210,6 @@ function InsightsPanel({ dayData, classData, kpis }) {
       });
     }
 
-    // Insight 3: Proporção UP/DOWN
     const up = classData?.find(c => c.demand_class === "UP");
     const down = classData?.find(c => c.demand_class === "DOWN");
     const total = (up?.total ?? 0) + (down?.total ?? 0);
@@ -138,7 +225,6 @@ function InsightsPanel({ dayData, classData, kpis }) {
       });
     }
 
-    // Insight 4: Diferença de preço entre estados
     if (kpis) {
       const diff = Math.abs(kpis.avg_nsw_price - kpis.avg_vic_price);
       const maisCaroState = kpis.avg_nsw_price > kpis.avg_vic_price ? "NSW" : "VIC";
@@ -180,7 +266,7 @@ function InsightsPanel({ dayData, classData, kpis }) {
                 <IIcon size={14} className={insight.color} strokeWidth={1.8} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-gray-800 leading-tight">
+                <p className="text-xs font-semibold leading-tight text-gray-800">
                   {insight.text}
                 </p>
                 <p className="mt-0.5 text-[11px] text-gray-400">
@@ -204,89 +290,51 @@ export default function Dashboard() {
   const [filterDay, setFilterDay] = useState("");
   const [filterClass, setFilterClass] = useState("");
 
-  /* ---- dados individuais + loading + erro ---- */
-  const [kpis, setKpis] = useState(null);
-  const [kpisLoading, setKpisLoading] = useState(true);
-  const [kpisError, setKpisError] = useState(null);
+  /* ---- parâmetros estáveis para as queries ---- */
+  const queryParams = useMemo(
+    () => ({
+      ...(filterDay && { day: filterDay }),
+      ...(filterClass && { class: filterClass }),
+    }),
+    [filterDay, filterClass],
+  );
 
-  const [demandData, setDemandData] = useState(null);
-  const [demandLoading, setDemandLoading] = useState(true);
-  const [demandError, setDemandError] = useState(null);
+  /* ---- React Query: 4 blocos, 4 queries independentes ---- */
 
-  const [classData, setClassData] = useState(null);
-  const [classLoading, setClassLoading] = useState(true);
-  const [classError, setClassError] = useState(null);
+  const kpisQuery = useQuery({
+    queryKey: ["kpis", queryParams],
+    queryFn: () => getKpis(queryParams),
+    placeholderData: (prev) => prev, // mantém dados anteriores enquanto recarrega
+  });
 
-  const [dayData, setDayData] = useState(null);
-  const [dayLoading, setDayLoading] = useState(true);
-  const [dayError, setDayError] = useState(null);
+  const demandQuery = useQuery({
+    queryKey: ["demand", queryParams],
+    queryFn: () => getDemandChart(queryParams),
+    placeholderData: (prev) => prev,
+  });
 
-  /* ---- última atualização ---- */
-  const [lastUpdate, setLastUpdate] = useState(null);
+  const classQuery = useQuery({
+    queryKey: ["classes", queryParams],
+    queryFn: () => getClassDistribution(queryParams),
+    placeholderData: (prev) => prev,
+  });
 
-  /* ---- função central de fetch paralelo ---- */
-  const buildParams = useCallback(() => {
-    const params = {};
-    if (filterDay) params.day = filterDay;
-    if (filterClass) params.class = filterClass;
-    return params;
-  }, [filterDay, filterClass]);
-
-  const fetchIdRef = useRef(0);
-
-  const fetchAll = useCallback(() => {
-    const id = ++fetchIdRef.current;
-    const params = buildParams();
-
-    setKpisLoading(true);
-    setDemandLoading(true);
-    setClassLoading(true);
-    setDayLoading(true);
-    
-    setKpisError(null);
-    setDemandError(null);
-    setClassError(null);
-    setDayError(null);
-
-    getDashboardData(params)
-      .then((data) => {
-        if (id !== fetchIdRef.current) return;
-        setKpis(data.kpis);
-        setDemandData(data.charts.demand_by_date);
-        setClassData(data.charts.class_distribution);
-        setDayData(data.charts.day_demand);
-      })
-      .catch((e) => {
-        if (id !== fetchIdRef.current) return;
-        const msg = e.message;
-        setKpisError(msg);
-        setDemandError(msg);
-        setClassError(msg);
-        setDayError(msg);
-      })
-      .finally(() => {
-        if (id !== fetchIdRef.current) return;
-        setKpisLoading(false);
-        setDemandLoading(false);
-        setClassLoading(false);
-        setDayLoading(false);
-        setLastUpdate(new Date());
-      });
-  }, [buildParams]);
-
-  /* Correr ao montar e quando os filtros mudam */
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  /* ---- estado global de loading ---- */
-  const allLoaded = !kpisLoading && !demandLoading && !classLoading && !dayLoading;
+  const dayQuery = useQuery({
+    queryKey: ["days", queryParams],
+    queryFn: () => getDayDemand(queryParams),
+    placeholderData: (prev) => prev,
+  });
 
   /* ---- KPIs ---- */
   const kpiItems = [
-    { type: "records", value: kpis?.total_records },
-    { type: "price_nsw", value: kpis?.avg_nsw_price },
-    { type: "price_vic", value: kpis?.avg_vic_price },
-    { type: "transfer", value: kpis?.avg_transfer },
+    { type: "records", value: kpisQuery.data?.total_records },
+    { type: "price_nsw", value: kpisQuery.data?.avg_nsw_price },
+    { type: "price_vic", value: kpisQuery.data?.avg_vic_price },
+    { type: "transfer", value: kpisQuery.data?.avg_transfer },
   ];
+
+  /* ---- timestamp da última actualização bem-sucedida ---- */
+  const lastUpdate = kpisQuery.dataUpdatedAt || demandQuery.dataUpdatedAt;
 
   /* ---- render ---- */
   return (
@@ -312,9 +360,9 @@ export default function Dashboard() {
               day: "numeric", month: "long", year: "numeric",
             })}
           </time>
-          {lastUpdate && (
+          {lastUpdate > 0 && (
             <span className="text-[10px] text-gray-300">
-              Atualizado às {lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              Atualizado às {new Date(lastUpdate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
         </div>
@@ -326,7 +374,7 @@ export default function Dashboard() {
         className="mb-6 animate-fade-in flex flex-wrap items-center gap-3"
         style={{ animationDelay: "0.05s", animationFillMode: "both" }}
       >
-        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+        <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-400">
           <Tag size={12} strokeWidth={1.6} />
           Filtros
         </span>
@@ -362,10 +410,9 @@ export default function Dashboard() {
           </button>
         )}
 
-        {/* Indicador de filtro ativo */}
         {(filterDay || filterClass) && (
           <span className="ml-auto flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
             Filtros ativos
           </span>
         )}
@@ -373,14 +420,12 @@ export default function Dashboard() {
 
       {/* ============ KPI CARDS ============ */}
       <section id="kpi-cards" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpisLoading
+        {kpisQuery.isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-fade-in" style={{ animationDelay: `${i * 0.06}s`, animationFillMode: "both" }}>
-                <MiniSkeleton height="h-24" />
-              </div>
+              <KpiSkeleton key={i} delay={i * 0.06} />
             ))
-          : kpisError
-            ? <div className="col-span-full"><ErrorBlock message={kpisError} /></div>
+          : kpisQuery.isError
+            ? <div className="col-span-full"><ErrorBlock message={kpisQuery.error?.message} /></div>
             : kpiItems.map((item, i) => (
                 <div
                   key={item.type}
@@ -394,13 +439,12 @@ export default function Dashboard() {
       </section>
 
       {/* ============ INSIGHTS ============ */}
-      {allLoaded && !kpisError && !dayError && !classError && (
-        <InsightsPanel dayData={dayData} classData={classData} kpis={kpis} />
+      {kpisQuery.data && dayQuery.data && classQuery.data && (
+        <InsightsPanel dayData={dayQuery.data} classData={classQuery.data} kpis={kpisQuery.data} />
       )}
 
       {/* ============ CHARTS ============ */}
       <section id="charts" className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
         {/* --- Gráfico de Linhas (2/3) --- */}
         <div
           className="animate-fade-in lg:col-span-2"
@@ -413,11 +457,11 @@ export default function Dashboard() {
                 Evolução da Demanda
               </h2>
             </div>
-            {demandLoading
-              ? <MiniSkeleton height="h-[320px]" />
-              : demandError
-                ? <ErrorBlock message={demandError} />
-                : <DemandLineChart data={demandData} />
+            {demandQuery.isLoading
+              ? <ChartSkeleton height="h-[320px]" delay={0.25} />
+              : demandQuery.isError
+                ? <ErrorBlock message={demandQuery.error?.message} />
+                : <DemandLineChart data={demandQuery.data} />
             }
           </div>
         </div>
@@ -434,11 +478,11 @@ export default function Dashboard() {
                 Distribuição UP / DOWN
               </h2>
             </div>
-            {classLoading
-              ? <MiniSkeleton height="h-[320px]" />
-              : classError
-                ? <ErrorBlock message={classError} />
-                : <ClassPieChart data={classData} />
+            {classQuery.isLoading
+              ? <ChartSkeleton height="h-[320px]" delay={0.35} />
+              : classQuery.isError
+                ? <ErrorBlock message={classQuery.error?.message} />
+                : <ClassPieChart data={classQuery.data} />
             }
           </div>
         </div>
@@ -455,15 +499,14 @@ export default function Dashboard() {
                 Procura Média por Dia da Semana
               </h2>
             </div>
-            {dayLoading
-              ? <MiniSkeleton height="h-[320px]" />
-              : dayError
-                ? <ErrorBlock message={dayError} />
-                : <DayDemandChart data={dayData} />
+            {dayQuery.isLoading
+              ? <BarSkeleton delay={0.45} />
+              : dayQuery.isError
+                ? <ErrorBlock message={dayQuery.error?.message} />
+                : <DayDemandChart data={dayQuery.data} />
             }
           </div>
         </div>
-
       </section>
 
       {/* ============ FOOTER ============ */}
