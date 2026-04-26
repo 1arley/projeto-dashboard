@@ -28,10 +28,9 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Garantir que não duplicamos dados ao re-executar
             self.stdout.write('Limpando registros existentes...')
-            existing = ElectricityRecord.objects.count()
-            if existing:
-                ElectricityRecord.objects.all().delete()
-                self.stdout.write(f'  → {existing} registos antigos removidos')
+            if ElectricityRecord.objects.exists():
+                deleted, _ = ElectricityRecord.objects.all().delete()
+                self.stdout.write(f'  → {deleted} registos antigos removidos')
 
             self.stdout.write('Preparando os registros para inserção no PostgreSQL...')
             records = [
