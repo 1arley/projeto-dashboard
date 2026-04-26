@@ -143,6 +143,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
 ]
 
+CORS_EXTRA = os.environ.get('CORS_ORIGIN', '')
+if CORS_EXTRA:
+    CORS_ALLOWED_ORIGINS.append(CORS_EXTRA)
+
 # -----------------------------------------------------------------
 #  Django REST Framework
 # -----------------------------------------------------------------
