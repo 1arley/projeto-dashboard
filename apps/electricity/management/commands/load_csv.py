@@ -23,31 +23,34 @@ class Command(BaseCommand):
         df['day'] = df['day'].astype(str).str.replace(r"^b'(.*)'$", r'\1', regex=True)
         df['class'] = df['class'].astype(str).str.replace(r"^b'(.*)'$", r'\1', regex=True)
 
-        # Garantir que não duplicamos dados ao re-executar
-        self.stdout.write('Limpando registros existentes...')
-        existing = ElectricityRecord.objects.count()
-        if existing:
-            ElectricityRecord.objects.all().delete()
-            self.stdout.write(f'  → {existing} registos antigos removidos')
+        from django.db import transaction
 
-        self.stdout.write('Preparando os registros para inserção no PostgreSQL...')
-        records = [
-            ElectricityRecord(
-                date=row['date'],
-                day=row['day'],
-                period=row['period'],
-                nsw_price=row['nswprice'],
-                nsw_demand=row['nswdemand'],
-                vic_price=row['vicprice'],
-                vic_demand=row['vicdemand'],
-                transfer=row['transfer'],
-                demand_class=row['class'],
-            )
-            for row in df.to_dict('records')
-        ]
+        with transaction.atomic():
+            # Garantir que não duplicamos dados ao re-executar
+            self.stdout.write('Limpando registros existentes...')
+            existing = ElectricityRecord.objects.count()
+            if existing:
+                ElectricityRecord.objects.all().delete()
+                self.stdout.write(f'  → {existing} registos antigos removidos')
 
-        self.stdout.write('Salvando no banco de dados em lote (bulk_create)...')
-        # O bulk_create é infinitamente mais rápido que salvar linha por linha
-        ElectricityRecord.objects.bulk_create(records, batch_size=5000)
+            self.stdout.write('Preparando os registros para inserção no PostgreSQL...')
+            records = [
+                ElectricityRecord(
+                    date=row['date'],
+                    day=row['day'],
+                    period=row['period'],
+                    nsw_price=row['nswprice'],
+                    nsw_demand=row['nswdemand'],
+                    vic_price=row['vicprice'],
+                    vic_demand=row['vicdemand'],
+                    transfer=row['transfer'],
+                    demand_class=row['class'],
+                )
+                for row in df.to_dict('records')
+            ]
+
+            self.stdout.write('Salvando no banco de dados em lote (bulk_create)...')
+            # O bulk_create é infinitamente mais rápido que salvar linha por linha
+            ElectricityRecord.objects.bulk_create(records, batch_size=5000)
         
         self.stdout.write(self.style.SUCCESS(f'Sucesso! {len(records)} registros foram inseridos no banco.'))

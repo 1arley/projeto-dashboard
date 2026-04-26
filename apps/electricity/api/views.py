@@ -60,15 +60,16 @@ def _build_queryset(filters):
 
 def _get_kpi_data(qs):
     """Retorna dict com total_records + 3 médias agregadas."""
-    total_records = qs.count()
     agg = qs.aggregate(
+        total_records=Count('id'),
         avg_nsw_price=Avg('nsw_price'),
         avg_vic_price=Avg('vic_price'),
         avg_transfer=Avg('transfer'),
     )
     return {
-        "total_records": total_records,
-        **{k: round(v, 4) if v else 0 for k, v in agg.items()},
+        "total_records": agg['total_records'] or 0,
+        **{k: round(v, 4) if v is not None else 0 
+           for k, v in agg.items() if k != 'total_records'},
     }
 
 
