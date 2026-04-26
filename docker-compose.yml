@@ -30,10 +30,11 @@ services:
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/electricity/dashboard/kpis/')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/electricity/health/')"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
