@@ -29,6 +29,11 @@ services:
       - .:/app
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/electricity/dashboard/kpis/')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     depends_on:
       db:
         condition: service_healthy
@@ -55,7 +60,8 @@ services:
     ports:
       - "5173:5173"
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     environment:
       - NODE_ENV=development
       - VITE_PROXY_TARGET=http://web:8000                              # proxy Vite → Django (hostname do Docker)

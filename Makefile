@@ -1,8 +1,6 @@
 setup:
 	@echo "Iniciando infraestrutura..."
-	docker compose up -d --build
-	@echo "Aguardando o banco..."
-	sleep 5
+	docker compose up -d --build --wait
 	@echo "Rodando migrações..."
 	docker compose exec web python manage.py migrate
 	@echo "Carregando dados..."
