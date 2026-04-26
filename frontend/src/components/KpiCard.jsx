@@ -29,7 +29,7 @@ const meta = {
   },
   transfer: {
     icon: ArrowRightLeft,
-    label: "Transferência Média",
+    label: "Transferência Média (MW)",
     circleBg: "bg-amber-50",
     circleIcon: "text-amber-600",
   },
@@ -46,9 +46,9 @@ export default function KpiCard({ type, value }) {
   };
 
   const formatted =
-    type === "records"
-      ? safeValue(value).toLocaleString("pt-BR")
-      : `$${safeValue(value).toFixed(4)}`;
+    type === "records" ? safeValue(value).toLocaleString("pt-BR")
+  : type === "transfer" ? `${safeValue(value).toFixed(2)} MW`
+  : `$${safeValue(value).toFixed(4)}`;
 
   return (
     <article
