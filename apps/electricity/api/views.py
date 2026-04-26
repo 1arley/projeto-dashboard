@@ -73,6 +73,35 @@ def _get_kpi_data(qs):
     }
 
 
+def _get_class_distribution(qs):
+    """Retorna queryset anotado com total por demand_class."""
+    return qs.values('demand_class').annotate(total=Count('id'))
+
+
+def _get_demand_by_date(qs):
+    """Retorna queryset anotado com médias NSW/VIC agrupadas por date."""
+    return qs.values('date').annotate(
+        avg_nsw_demand=Avg('nsw_demand'),
+        avg_vic_demand=Avg('vic_demand'),
+    ).order_by('date')
+
+
+def _get_day_demand(qs):
+    """Retorna lista enriquecida com nome do dia e médias NSW/VIC."""
+    rows = qs.values('day').annotate(
+        avg_nsw_demand=Avg('nsw_demand'),
+        avg_vic_demand=Avg('vic_demand'),
+    ).order_by('day')
+    return [
+        {
+            "day": DAY_NUMBER_TO_NAME.get(r["day"], r["day"]),
+            "avg_nsw_demand": round(r["avg_nsw_demand"], 4),
+            "avg_vic_demand": round(r["avg_vic_demand"], 4),
+        }
+        for r in rows
+    ]
+
+
 # ------------------------------------------------------------------
 # /api/electricity/dashboard/kpis/
 # ------------------------------------------------------------------
@@ -111,11 +140,7 @@ class DemandChartView(APIView):
             )
 
         qs = _build_queryset(filters)
-
-        demand_by_date = qs.values('date').annotate(
-            avg_nsw_demand=Avg('nsw_demand'),
-            avg_vic_demand=Avg('vic_demand')
-        ).order_by('date')
+        demand_by_date = _get_demand_by_date(qs)
 
         serializer = DemandPointSerializer(demand_by_date, many=True)
         return Response(serializer.data)
@@ -137,10 +162,7 @@ class ClassDistributionView(APIView):
             )
 
         qs = _build_queryset(filters)
-
-        distribution = qs.values('demand_class').annotate(
-            total=Count('id')
-        )
+        distribution = _get_class_distribution(qs)
 
         serializer = ClassDistributionSerializer(distribution, many=True)
         return Response(serializer.data)
@@ -162,19 +184,7 @@ class DayDemandView(APIView):
             )
 
         qs = _build_queryset(filters)
-
-        rows = qs.values('day').annotate(
-            avg_nsw_demand=Avg('nsw_demand'),
-            avg_vic_demand=Avg('vic_demand')
-        ).order_by('day')
-
-        enriched = []
-        for r in rows:
-            enriched.append({
-                "day": DAY_NUMBER_TO_NAME.get(r["day"], r["day"]),
-                "avg_nsw_demand": round(r["avg_nsw_demand"], 4),
-                "avg_vic_demand": round(r["avg_vic_demand"], 4),
-            })
+        enriched = _get_day_demand(qs)
 
         serializer = DayDemandSerializer(enriched, many=True)
         return Response(serializer.data)
@@ -198,34 +208,10 @@ class DashboardSummaryView(APIView):
 
         qs = _build_queryset(filters)
 
-        # KPIs
         kpi_data = _get_kpi_data(qs)
-
-        # Class distribution
-        class_distribution = qs.values('demand_class').annotate(
-            total=Count('id')
-        )
-
-        # Demand by date
-        demand_by_date = qs.values('date').annotate(
-            avg_nsw_demand=Avg('nsw_demand'),
-            avg_vic_demand=Avg('vic_demand')
-        ).order_by('date')
-
-        # Day demand
-        day_rows = qs.values('day').annotate(
-            avg_nsw_demand=Avg('nsw_demand'),
-            avg_vic_demand=Avg('vic_demand')
-        ).order_by('day')
-
-        day_enriched = [
-            {
-                "day": DAY_NUMBER_TO_NAME.get(r["day"], r["day"]),
-                "avg_nsw_demand": round(r["avg_nsw_demand"], 4),
-                "avg_vic_demand": round(r["avg_vic_demand"], 4),
-            }
-            for r in day_rows
-        ]
+        class_distribution = _get_class_distribution(qs)
+        demand_by_date = _get_demand_by_date(qs)
+        day_enriched = _get_day_demand(qs)
 
         return Response({
             "kpis": kpi_data,
