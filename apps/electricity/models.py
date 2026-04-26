@@ -2,7 +2,7 @@ from django.db import models
 
 class ElectricityRecord(models.Model):
     date = models.FloatField() 
-    day = models.CharField(max_length=10) 
+    day = models.CharField(max_length=10, db_index=True) 
     period = models.FloatField()
     
     nsw_price = models.FloatField(db_column='nswprice')
@@ -11,7 +11,7 @@ class ElectricityRecord(models.Model):
     vic_demand = models.FloatField(db_column='vicdemand')
     transfer = models.FloatField()
     
-    demand_class = models.CharField(max_length=10, db_column='class')
+    demand_class = models.CharField(max_length=10, db_column='class', db_index=True)
 
     class Meta:
         db_table = 'electricity_records'
