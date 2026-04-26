@@ -5,11 +5,11 @@ echo ===================================================
 
 echo.
 echo [1/4] Subindo a infraestrutura (Docker)...
-docker compose up -d --build
+docker compose up -d --build --wait
 
 echo.
-echo [2/4] Aguardando o PostgreSQL inicializar (5 segundos)...
-timeout /t 5 /nobreak > NUL
+echo [2/4] Aguardando o PostgreSQL inicializar...
+rem --wait aguarda todos os healthchecks antes de prosseguir
 
 echo.
 echo [3/4] Executando as migracoes do Banco de Dados...
