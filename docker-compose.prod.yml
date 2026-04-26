@@ -24,6 +24,12 @@ services:
       - "8000"          # só expõe internamente (não publica portas)
     ports: []            # remove o mapeamento ":8000" do dev
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/electricity/dashboard/kpis/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     volumes:
       - static_volume:/app/staticfiles
 
@@ -36,7 +42,8 @@ services:
       - "80:80"         # nginx na porta 80
       # - "443:443"     # descomentar com SSL
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - static_volume:/app/staticfiles:ro
