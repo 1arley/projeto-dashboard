@@ -20,8 +20,9 @@ import {
 function CustomTooltip({ active, payload, label, data }) {
   if (!active || !payload?.length) return null;
 
-  const idx = data?.findIndex(d => d.date === label) ?? -1;
-  const display = idx >= 0 ? `Período ${idx + 1}` : label.toFixed(3);
+  const numLabel = Number(label);
+  const idx = data?.findIndex(d => Math.abs(d.date - numLabel) < 1e-9) ?? -1;
+  const display = idx >= 0 ? `Período ${idx + 1}` : numLabel.toFixed(3);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
@@ -82,9 +83,12 @@ export default function DemandLineChart({ data = [] }) {
             tick={{ fontSize: 11, fill: "#9ca3af", fontFamily: "DM Sans" }}
             tickLine={false}
             axisLine={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+            tickCount={12}
+            interval="preserveStartEnd"
             tickFormatter={(v) => {
-              const i = data.findIndex(d => d.date === v);
-              return i >= 0 ? `P${i + 1}` : v.toFixed(3);
+              const numV = Number(v);
+              const i = data.findIndex(d => Math.abs(d.date - numV) < 1e-9);
+              return i >= 0 ? `P${i + 1}` : numV.toFixed(3);
             }}
           />
 
