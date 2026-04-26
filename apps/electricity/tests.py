@@ -235,6 +235,18 @@ class DashboardSummaryViewTests(ElectricityAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['kpis']['total_records'], 2)
 
+    def test_summary_filter_by_class(self):
+        response = self.client.get('/api/electricity/dashboard/', {'class': 'UP'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['kpis']['total_records'], 2)
+
+    def test_summary_filter_combined(self):
+        response = self.client.get('/api/electricity/dashboard/', {
+            'day': 'Monday', 'class': 'UP'
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['kpis']['total_records'], 1)
+
 
 # ==================================================================
 # Modelo
