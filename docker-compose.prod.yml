@@ -25,7 +25,7 @@ services:
     ports: []            # remove o mapeamento ":8000" do dev
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/electricity/dashboard/kpis/')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/electricity/health/')"]
       interval: 10s
       timeout: 5s
       retries: 10

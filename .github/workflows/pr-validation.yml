@@ -2,42 +2,78 @@ name: PR Validation
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  lint-and-format:
-    name: Lint & Prettier
+  backend:
+    name: Backend (Django)
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run lint
-      - run: npx prettier --check .
 
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint-and-format
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run test:unit 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
 
-  e2e-tests:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: unit-tests
+    env:
+      SECRET_KEY: test-secret-key-for-ci
+      DEBUG: "false"
+      DB_NAME: test_db
+      DB_USER: test_user
+      DB_PASSWORD: test_pass
+      DB_HOST: localhost
+      DB_PORT: "5432"
+
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+
+      - name: Run Django tests
+        run: python manage.py test apps.electricity --verbosity=2
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm ci
-      - run: npx playwright install --with-deps
-      - run: npm run test:e2e
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: npm test

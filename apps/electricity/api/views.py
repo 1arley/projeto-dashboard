@@ -2,13 +2,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Avg, Count
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 from apps.electricity.models import ElectricityRecord
-
-
-class HealthCheckView(APIView):
-    def get(self, request):
-        return Response({"status": "ok"})
+from apps.electricity.models import DAY_NAME_TO_NUMBER, DAY_NUMBER_TO_NAME
 from .serializers import (
     KpiSerializer,
     DemandPointSerializer,
@@ -17,16 +15,10 @@ from .serializers import (
     DashboardFilterSerializer,
 )
 
-# ------------------------------------------------------------------
-# Constantes
-# ------------------------------------------------------------------
 
-DAY_NAME_TO_NUMBER = {
-    "Monday": "1", "Tuesday": "2", "Wednesday": "3",
-    "Thursday": "4", "Friday": "5", "Saturday": "6", "Sunday": "7",
-}
-
-DAY_NUMBER_TO_NAME = {v: k for k, v in DAY_NAME_TO_NUMBER.items()}
+class HealthCheckView(APIView):
+    def get(self, request):
+        return Response({"status": "ok"})
 
 
 # ------------------------------------------------------------------
@@ -53,7 +45,7 @@ def _build_queryset(filters):
 
     day = filters.get('day')
     if day:
-        day_value = DAY_NAME_TO_NUMBER.get(day, day)
+        day_value = DAY_NAME_TO_NUMBER[day]
         qs = qs.filter(day=day_value)
 
     demand_class = filters.get('demand_class')
@@ -117,12 +109,13 @@ def _get_day_demand(qs):
 
 
 # ------------------------------------------------------------------
-# /api/electricity/dashboard/kpis/
+# /api/v1/electricity/dashboard/kpis/
 # ------------------------------------------------------------------
 
 class DashboardKPIView(APIView):
     """Retorna os 4 KPIs principais do dashboard."""
 
+    @method_decorator(cache_page(60))
     def get(self, request):
         valid, filters, errors = _validate_filters(request)
         if not valid:
@@ -139,12 +132,13 @@ class DashboardKPIView(APIView):
 
 
 # ------------------------------------------------------------------
-# /api/electricity/dashboard/charts/demand/
+# /api/v1/electricity/dashboard/charts/demand/
 # ------------------------------------------------------------------
 
 class DemandChartView(APIView):
     """Retorna a série temporal da demanda NSW vs VIC."""
 
+    @method_decorator(cache_page(60))
     def get(self, request):
         valid, filters, errors = _validate_filters(request)
         if not valid:
@@ -161,12 +155,13 @@ class DemandChartView(APIView):
 
 
 # ------------------------------------------------------------------
-# /api/electricity/dashboard/charts/classes/
+# /api/v1/electricity/dashboard/charts/classes/
 # ------------------------------------------------------------------
 
 class ClassDistributionView(APIView):
     """Retorna a distribuição de registos por classe (UP / DOWN)."""
 
+    @method_decorator(cache_page(60))
     def get(self, request):
         valid, filters, errors = _validate_filters(request)
         if not valid:
@@ -183,12 +178,13 @@ class ClassDistributionView(APIView):
 
 
 # ------------------------------------------------------------------
-# /api/electricity/dashboard/charts/days/
+# /api/v1/electricity/dashboard/charts/days/
 # ------------------------------------------------------------------
 
 class DayDemandView(APIView):
     """Retorna a procura média por dia da semana."""
 
+    @method_decorator(cache_page(60))
     def get(self, request):
         valid, filters, errors = _validate_filters(request)
         if not valid:
@@ -205,13 +201,13 @@ class DayDemandView(APIView):
 
 
 # ------------------------------------------------------------------
-# /api/electricity/dashboard/summary/
-#   Endpoint único com todos os dados — útil para carga inicial
+# /api/v1/electricity/dashboard/
 # ------------------------------------------------------------------
 
 class DashboardSummaryView(APIView):
     """Retorna KPIs + dados de todos os gráficos numa só resposta."""
 
+    @method_decorator(cache_page(60))
     def get(self, request):
         valid, filters, errors = _validate_filters(request)
         if not valid:

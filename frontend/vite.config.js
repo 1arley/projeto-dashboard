@@ -13,14 +13,19 @@ export default defineConfig({
     strictPort: true,
 
     /* ── Proxy dev: /api/ → Django ───────────────
-       - Docker:      VITE_PROXY_TARGET=http://web:8000  (definido no docker-compose)
-       - Local (npm): usa http://localhost:8000 por omissão
-    */
+     * - Docker: VITE_PROXY_TARGET=http://web:8000 (definido no docker-compose)
+     * - Local (npm): usa http://localhost:8000 por omissao
+     */
     proxy: {
       '/api': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:8000',
         changeOrigin: true,
       },
     },
+  },
+
+  test: {
+    environment: 'jsdom',
+    globals: true,
   },
 })

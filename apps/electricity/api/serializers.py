@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
+from apps.electricity.models import DAY_NAME_TO_NUMBER, DEMAND_CLASS_CHOICES
+
+
 # ------------------------------------------------------------------
 # Serializers — Dashboard API
-# Cada resposta tem o seu próprio serializer, garantindo validação
-# e documentação implícita do contrato da API.
 # ------------------------------------------------------------------
-
 
 class KpiSerializer(serializers.Serializer):
     """KPIs agregados do dashboard."""
@@ -39,19 +39,15 @@ class DayDemandSerializer(serializers.Serializer):
 # Filtros — Validação dos query parameters
 # ------------------------------------------------------------------
 
-VALID_DAYS = {
-    "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday", "Sunday",
-}
-
-VALID_CLASSES = {"UP", "DOWN"}
+VALID_DAYS = set(DAY_NAME_TO_NUMBER.keys())
+VALID_CLASSES = {c[0] for c in DEMAND_CLASS_CHOICES}
 
 
 class DashboardFilterSerializer(serializers.Serializer):
     """Valida os query parameters dos endpoints do dashboard."""
-    day = serializers.CharField(required=False, allow_blank=True)
+    day = serializers.CharField(required=False, allow_blank=True, max_length=10)
     demand_class = serializers.CharField(
-        required=False, allow_blank=True
+        required=False, allow_blank=True, max_length=10
     )
 
     def validate_day(self, value):

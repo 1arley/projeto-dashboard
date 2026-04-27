@@ -198,15 +198,15 @@ function InsightsPanel({ dayData, classData, kpis }) {
       }
       items.push({
         icon: TrendingUp,
-        text: `${DAY_PT[maxNSW.day] || maxNSW.day} e o dia com maior demanda NSW`,
-        detail: `Media: ${maxNSW.avg_nsw_demand.toFixed(4)}`,
+        text: `${DAY_PT[maxNSW.day] || maxNSW.day} é o dia com maior demanda NSW`,
+        detail: `Média: ${maxNSW.avg_nsw_demand.toFixed(4)}`,
         color: "text-blue-600",
         bg: "bg-blue-50",
       });
       items.push({
         icon: TrendingUp,
-        text: `${DAY_PT[maxVIC.day] || maxVIC.day} e o dia com maior demanda VIC`,
-        detail: `Media: ${maxVIC.avg_vic_demand.toFixed(4)}`,
+        text: `${DAY_PT[maxVIC.day] || maxVIC.day} é o dia com maior demanda VIC`,
+        detail: `Média: ${maxVIC.avg_vic_demand.toFixed(4)}`,
         color: "text-teal-600",
         bg: "bg-teal-50",
       });
@@ -305,25 +305,25 @@ export default function Dashboard() {
 
   const kpisQuery = useQuery({
     queryKey: ["kpis", queryParams],
-    queryFn: () => getKpis(queryParams),
-    placeholderData: (prev) => prev, // mantém dados anteriores enquanto recarrega
+    queryFn: ({ signal }) => getKpis(queryParams, signal),
+    placeholderData: (prev) => prev,
   });
 
   const demandQuery = useQuery({
     queryKey: ["demand", queryParams],
-    queryFn: () => getDemandChart(queryParams),
+    queryFn: ({ signal }) => getDemandChart(queryParams, signal),
     placeholderData: (prev) => prev,
   });
 
   const classQuery = useQuery({
     queryKey: ["classes", queryParams],
-    queryFn: () => getClassDistribution(queryParams),
+    queryFn: ({ signal }) => getClassDistribution(queryParams, signal),
     placeholderData: (prev) => prev,
   });
 
   const dayQuery = useQuery({
     queryKey: ["days", queryParams],
-    queryFn: () => getDayDemand(queryParams),
+    queryFn: ({ signal }) => getDayDemand(queryParams, signal),
     placeholderData: (prev) => prev,
   });
 
@@ -340,8 +340,13 @@ export default function Dashboard() {
     setFilterClass("");
   }, []);
 
-  /* ---- timestamp da última actualização bem-sucedida ---- */
-  const lastUpdate = kpisQuery.dataUpdatedAt || demandQuery.dataUpdatedAt;
+  /* ---- timestamp da ultima atualizacao bem-sucedida ---- */
+  const lastUpdate = Math.max(
+    kpisQuery.dataUpdatedAt,
+    demandQuery.dataUpdatedAt,
+    classQuery.dataUpdatedAt,
+    dayQuery.dataUpdatedAt,
+  );
 
   /* ---- render ---- */
   return (
@@ -357,7 +362,7 @@ export default function Dashboard() {
               Energy Pulse
             </h1>
             <p className="text-sm text-gray-500">
-              Demanda de Electricidade — NSW / VIC
+              Demanda de Eletricidade — NSW / VIC
             </p>
           </div>
         </div>
@@ -471,9 +476,9 @@ export default function Dashboard() {
         ? <ChartSkeleton height="h-[320px]" delay={0.25} />
         : demandQuery.isError
         ? <ErrorBlock message={demandQuery.error?.message} />
-        : demandQuery.data?.length === 0 && (filterDay || filterClass)
+        : demandQuery.data?.length === 0
         ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
-        : <DemandLineChart data={demandQuery.data} />
+        : <DemandLineChart data={demandQuery.data || []} />
         }
           </div>
         </div>
@@ -494,7 +499,9 @@ export default function Dashboard() {
         ? <ChartSkeleton height="h-[320px]" delay={0.35} />
         : classQuery.isError
         ? <ErrorBlock message={classQuery.error?.message} />
-        : <ClassPieChart data={classQuery.data} />
+        : classQuery.data?.length === 0
+        ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
+        : <ClassPieChart data={classQuery.data || []} />
         }
           </div>
         </div>
@@ -515,7 +522,9 @@ export default function Dashboard() {
         ? <BarSkeleton delay={0.45} />
         : dayQuery.isError
         ? <ErrorBlock message={dayQuery.error?.message} />
-        : <DayDemandChart data={dayQuery.data} />
+        : dayQuery.data?.length === 0
+        ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
+        : <DayDemandChart data={dayQuery.data || []} />
         }
           </div>
         </div>

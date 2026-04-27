@@ -1,11 +1,11 @@
 import os
-import pandas as pd
-from django.core.management.base import BaseCommand
-from apps.electricity.models import ElectricityRecord
+from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-VALID_DAYS = {'1', '2', '3', '4', '5', '6', '7'}
-VALID_CLASSES = {'UP', 'DOWN'}
+from apps.electricity.models import ElectricityRecord, DAY_CHOICES, DEMAND_CLASS_CHOICES
+
+VALID_DAYS = {str(num) for num, _ in DAY_CHOICES}
+VALID_CLASSES = {c[0] for c in DEMAND_CLASS_CHOICES}
 CHUNK_SIZE = 10_000
 
 
@@ -18,7 +18,7 @@ class Command(BaseCommand):
         )
         invalid_days = set(df['day'].unique()) - VALID_DAYS
         if invalid_days:
-            raise ValueError(
+            raise CommandError(
                 f"Dias invalidos encontrados: {invalid_days}. "
                 f"Valores esperados: 1-7"
             )
@@ -28,30 +28,28 @@ class Command(BaseCommand):
         )
         invalid_classes = set(df['class'].unique()) - VALID_CLASSES
         if invalid_classes:
-            raise ValueError(
+            raise CommandError(
                 f"Classes invalidas encontradas: {invalid_classes}. "
                 f"Valores esperados: UP, DOWN"
             )
         return df
 
     def handle(self, *args, **kwargs):
+        import pandas as pd
+
         file_path = os.path.join(settings.BASE_DIR, 'electricity.csv')
 
         if not os.path.exists(file_path):
-            self.stdout.write(self.style.ERROR(
+            raise CommandError(
                 f'Arquivo nao encontrado: {file_path}'
-            ))
-            return
+            )
 
         self.stdout.write('Limpando registros existentes...')
-        from django.db import transaction
-
-        with transaction.atomic():
-            if ElectricityRecord.objects.exists():
-                deleted, _ = ElectricityRecord.objects.all().delete()
-                self.stdout.write(
-                    f'  -> {deleted} registos antigos removidos'
-                )
+        if ElectricityRecord.objects.exists():
+            deleted, _ = ElectricityRecord.objects.all().delete()
+            self.stdout.write(
+                f'  -> {deleted} registos antigos removidos'
+            )
 
         total_rows = 0
         chunk_count = 0
@@ -64,26 +62,27 @@ class Command(BaseCommand):
             chunk = self._clean_chunk(chunk)
 
             self.stdout.write(
-                f'  Chunk #{chunk_count}: {chunk.shape[0]:,} linhas -> '
+                f' Chunk #{chunk_count}: {chunk.shape[0]:,} linhas -> '
                 f'inserindo no PostgreSQL...'
             )
 
-            def record_generator():
-                for _, row in chunk.iterrows():
-                    yield ElectricityRecord(
-                        date=row['date'],
-                        day=row['day'],
-                        period=row['period'],
-                        nsw_price=row['nswprice'],
-                        nsw_demand=row['nswdemand'],
-                        vic_price=row['vicprice'],
-                        vic_demand=row['vicdemand'],
-                        transfer=row['transfer'],
-                        demand_class=row['class'],
-                    )
+            records = [
+                ElectricityRecord(
+                    date=row['date'],
+                    day=int(row['day']),
+                    period=row['period'],
+                    nsw_price=row['nswprice'],
+                    nsw_demand=row['nswdemand'],
+                    vic_price=row['vicprice'],
+                    vic_demand=row['vicdemand'],
+                    transfer=row['transfer'],
+                    demand_class=row['class'],
+                )
+                for _, row in chunk.iterrows()
+            ]
 
             ElectricityRecord.objects.bulk_create(
-                record_generator(), batch_size=5000
+                records, batch_size=5000
             )
             total_rows += chunk.shape[0]
 
