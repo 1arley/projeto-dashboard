@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Zap,
@@ -24,8 +24,13 @@ import {
 } from "../services/api";
 
 const DAYS = [
-  "Monday", "Tuesday", "Wednesday", "Thursday",
-  "Friday", "Saturday", "Sunday",
+  { value: "Monday", label: "Segunda" },
+  { value: "Tuesday", label: "Terça" },
+  { value: "Wednesday", label: "Quarta" },
+  { value: "Thursday", label: "Quinta" },
+  { value: "Friday", label: "Sexta" },
+  { value: "Saturday", label: "Sábado" },
+  { value: "Sunday", label: "Domingo" },
 ];
 
 const DAY_PT = {
@@ -33,7 +38,10 @@ const DAY_PT = {
   Thursday: "Quinta", Friday: "Sexta", Saturday: "Sábado", Sunday: "Domingo",
 };
 
-const CLASSES = ["UP", "DOWN"];
+const CLASSES = [
+  { value: "UP", label: "UP" },
+  { value: "DOWN", label: "DOWN" },
+];
 
 /* ==============================================================
    Skeletons com shimmer
@@ -45,11 +53,10 @@ function SkeletonBar({ width = "w-full", height = "h-3" }) {
   );
 }
 
-function KpiSkeleton({ delay = 0 }) {
+function KpiSkeleton() {
   return (
     <div
-      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
-      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+      className="overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
     >
       <div className="space-y-3">
         <SkeletonBar width="w-20" height="h-3" />
@@ -59,11 +66,10 @@ function KpiSkeleton({ delay = 0 }) {
   );
 }
 
-function ChartSkeleton({ height = "h-[320px]", delay = 0 }) {
+function ChartSkeleton({ height = "h-[320px]" }) {
   return (
     <div
-      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
-      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+      className="overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
     >
       <div className="mb-5 flex items-center gap-2">
         <SkeletonBar width="w-4" height="h-4" />
@@ -101,8 +107,7 @@ const BAR_SEEDS = [42, 68, 53, 71, 47, 62, 55];
 function BarSkeleton({ delay = 0 }) {
   return (
     <div
-      className="animate-fade-in overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
-      style={{ animationDelay: `${delay}s`, animationFillMode: "both" }}
+      className="overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
     >
       <div className="mb-5 flex items-center gap-2">
         <SkeletonBar width="w-4" height="h-4" />
@@ -131,7 +136,7 @@ function BarSkeleton({ delay = 0 }) {
 
 function ErrorBlock({ message }) {
   return (
-    <div className="flex animate-fade-in items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center text-xs text-red-600">
+    <div className="flex items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 py-6 text-center text-xs text-red-600">
       {message || "Erro ao carregar"}
     </div>
   );
@@ -139,7 +144,7 @@ function ErrorBlock({ message }) {
 
 function EmptyBlock({ message }) {
   return (
-    <div className="flex animate-fade-in items-center justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 py-6 text-center text-xs text-gray-400">
+    <div className="flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 py-6 text-center text-xs text-gray-400">
       {message || "Nenhum dado encontrado"}
     </div>
   );
@@ -170,9 +175,11 @@ function FilterSelect({ icon: Icon, value, onChange, options, placeholder, id, l
           ${isActive ? "border-gray-300 text-gray-800" : "border-gray-200 text-gray-400"}`}
       >
         <option value="">{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
+        {options.map((opt) => {
+          const val = typeof opt === "string" ? opt : opt.value;
+          const lbl = typeof opt === "string" ? opt : opt.label;
+          return <option key={val} value={val}>{lbl}</option>;
+        })}
       </select>
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
         <ChevronDown size={10} strokeWidth={1.5} />
@@ -246,8 +253,7 @@ function InsightsPanel({ dayData, classData, kpis }) {
 
   return (
     <section
-      className="mb-8 animate-fade-in"
-      style={{ animationDelay: "0.5s", animationFillMode: "both" }}
+      className="mb-8"
     >
       <div className="mb-3 flex items-center gap-2">
         <Lightbulb size={16} className="text-gray-400" strokeWidth={1.6} />
@@ -261,8 +267,7 @@ function InsightsPanel({ dayData, classData, kpis }) {
           return (
             <div
               key={i}
-              className="animate-fade-in group flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3.5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
-              style={{ animationDelay: `${0.55 + i * 0.06}s`, animationFillMode: "both" }}
+              className="group flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3.5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${insight.bg}`}>
                 <IIcon size={14} className={insight.color} strokeWidth={1.8} />
@@ -291,6 +296,7 @@ export default function Dashboard() {
   /* ---- filtros ---- */
   const [filterDay, setFilterDay] = useState("");
   const [filterClass, setFilterClass] = useState("");
+  const [, startTransition] = useTransition();
 
   /* ---- parâmetros estáveis para as queries ---- */
   const queryParams = useMemo(
@@ -336,9 +342,21 @@ export default function Dashboard() {
   ], [kpisQuery.data]);
 
   const handleClearFilters = useCallback(() => {
-    setFilterDay("");
-    setFilterClass("");
+    startTransition(() => {
+      setFilterDay("");
+      setFilterClass("");
+    });
   }, []);
+
+  const handleDayChange = useCallback(
+    (value) => startTransition(() => setFilterDay(value)),
+    [],
+  );
+
+  const handleClassChange = useCallback(
+    (value) => startTransition(() => setFilterClass(value)),
+    [],
+  );
 
   /* ---- timestamp da ultima atualizacao bem-sucedida ---- */
   const lastUpdate = Math.max(
@@ -352,7 +370,7 @@ export default function Dashboard() {
   return (
     <div className="mx-auto min-h-screen max-w-[1280px] px-6 py-8 sm:px-8 lg:px-10">
       {/* ============ HEADER ============ */}
-      <header className="mb-8 flex animate-fade-in items-center justify-between">
+      <header className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="header-icon-glow flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white">
             <Zap size={20} strokeWidth={2} />
@@ -383,8 +401,7 @@ export default function Dashboard() {
       {/* ============ FILTER BAR ============ */}
       <section
         id="filter-bar"
-        className="mb-6 animate-fade-in flex flex-wrap items-center gap-3"
-        style={{ animationDelay: "0.05s", animationFillMode: "both" }}
+        className="mb-6 flex flex-wrap items-center gap-3"
       >
         <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-400">
           <Tag size={12} strokeWidth={1.6} />
@@ -395,7 +412,7 @@ export default function Dashboard() {
           id="filter-day"
           icon={CalendarDays}
           value={filterDay}
-          onChange={setFilterDay}
+          onChange={handleDayChange}
           options={DAYS}
           placeholder="Todos os dias"
           label="Filtrar por dia da semana"
@@ -407,7 +424,7 @@ export default function Dashboard() {
           id="filter-class"
           icon={SlidersHorizontal}
           value={filterClass}
-          onChange={setFilterClass}
+          onChange={handleClassChange}
           options={CLASSES}
           placeholder="Todas as classes"
           label="Filtrar por classe de demanda"
@@ -433,6 +450,7 @@ export default function Dashboard() {
         )}
       </section>
 
+
       {/* ============ KPI CARDS ============ */}
       <section id="kpi-cards" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpisQuery.isLoading
@@ -441,11 +459,9 @@ export default function Dashboard() {
             ))
           : kpisQuery.isError
             ? <div className="col-span-full"><ErrorBlock message={kpisQuery.error?.message} /></div>
-            : kpiItems.map((item, i) => (
+            : kpiItems.map((item) => (
                 <div
                   key={item.type}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${0.1 + i * 0.06}s`, animationFillMode: "both" }}
                 >
                   <KpiCard type={item.type} value={item.value} />
                 </div>
@@ -462,10 +478,9 @@ export default function Dashboard() {
       <section id="charts" className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* --- Gráfico de Linhas (2/3) --- */}
         <div
-          className="animate-fade-in lg:col-span-2"
-          style={{ animationDelay: "0.25s", animationFillMode: "both" }}
+          className="lg:col-span-2"
         >
-          <div className="h-full rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="min-h-[400px] rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <BarChart3 size={16} className="text-gray-400" strokeWidth={1.6} />
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -478,17 +493,14 @@ export default function Dashboard() {
         ? <ErrorBlock message={demandQuery.error?.message} />
         : demandQuery.data?.length === 0
         ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
-        : <DemandLineChart data={demandQuery.data || []} />
+        : <DemandLineChart key={filterDay === "" ? JSON.stringify(queryParams) : "demand-stable"} data={demandQuery.data || []} />
         }
           </div>
         </div>
 
         {/* --- Gráfico Donut (1/3) --- */}
-        <div
-          className="animate-fade-in"
-          style={{ animationDelay: "0.35s", animationFillMode: "both" }}
-        >
-          <div className="h-full rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div>
+          <div className="min-h-[400px] rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <PieChart size={16} className="text-gray-400" strokeWidth={1.6} />
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -508,10 +520,9 @@ export default function Dashboard() {
 
         {/* --- Gráfico de Barras (full width) --- */}
         <div
-          className="animate-fade-in lg:col-span-3"
-          style={{ animationDelay: "0.45s", animationFillMode: "both" }}
+          className="lg:col-span-3"
         >
-          <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="min-h-[400px] rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <BarChart3 size={16} className="text-gray-400" strokeWidth={1.6} />
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">

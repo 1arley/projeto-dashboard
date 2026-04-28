@@ -19,8 +19,8 @@ const DAY_ORDER = [
 ];
 
 const DAY_PT = {
-Monday: "Segunda", Tuesday: "Terca", Wednesday: "Quarta",
-Thursday: "Quinta", Friday: "Sexta", Saturday: "Sabado", Sunday: "Domingo",
+Monday: "Segunda", Tuesday: "Terça", Wednesday: "Quarta",
+Thursday: "Quinta", Friday: "Sexta", Saturday: "Sábado", Sunday: "Domingo",
 };
 
 function CustomTooltip({ active, payload, label }) {
@@ -81,10 +81,12 @@ dayLabel: DAY_PT[d.day] ?? d.day,
 );
 
 return (
-<div className="h-full w-full">
+<div className="h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
 <ResponsiveContainer width="100%" height={320}>
 <BarChart
 data={localized}
+animationDuration={500}
+animationEasing="ease-in-out"
 layout="vertical"
 margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
 barSize={14}
@@ -110,18 +112,15 @@ width={80}
 
 <Bar
 dataKey="avg_nsw_demand"
-name="NSW Demand"
+name="Demanda NSW"
 fill="var(--color-chart-nsw)"
 radius={[0, 4, 4, 0]}
-animationDuration={300}
 />
-
 <Bar
 dataKey="avg_vic_demand"
-name="VIC Demand"
+name="Demanda VIC"
 fill="var(--color-chart-vic)"
 radius={[0, 4, 4, 0]}
-animationDuration={300}
 />
 </BarChart>
 </ResponsiveContainer>

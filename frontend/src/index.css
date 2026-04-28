@@ -18,7 +18,6 @@
   --dashboard-chart-height: 320px;
 
   /* Animation tokens */
-  --animate-fade-in: fade-in 0.5s ease-out both;
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
 }
 
@@ -36,15 +35,6 @@ body {
 }
 
 /* --- Animações --- */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: var(--animate-fade-in);
-}
-
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -66,6 +56,15 @@ body {
   box-shadow:
     0 0 15px rgba(249, 250, 251, 0.1),
     0 0 30px rgba(100, 116, 139, 0.06);
+}
+
+/* --- Recharts: evitar flicker durante troca de dados --- */
+.recharts-wrapper {
+  background-color: #ffffff;
+}
+
+.recharts-surface {
+  background-color: #ffffff;
 }
 
 /* --- Scrollbar sutil --- */

@@ -11,25 +11,25 @@ KpiCard — Cartao de indicador principal
 const meta = {
 records: {
 icon: Database,
-label: "Registos Processados",
+label: "Registros Processados",
 circleBg: "bg-blue-50",
 circleIcon: "text-blue-600",
 },
 price_nsw: {
 icon: TrendingUp,
-label: "Preco Medio NSW",
+label: "Preço Médio NSW",
 circleBg: "bg-indigo-50",
 circleIcon: "text-indigo-600",
 },
 price_vic: {
 icon: TrendingDown,
-label: "Preco Medio VIC",
+label: "Preço Médio VIC",
 circleBg: "bg-emerald-50",
 circleIcon: "text-emerald-600",
 },
 transfer: {
 icon: ArrowRightLeft,
-label: "Transferencia Media (MW)",
+label: "Transferência Média (MW)",
 circleBg: "bg-amber-50",
 circleIcon: "text-amber-600",
 },

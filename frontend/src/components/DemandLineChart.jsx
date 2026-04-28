@@ -76,11 +76,14 @@ const tooltipContent = useMemo(
 );
 
 return (
-<div className="h-full w-full">
+<div className="h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
 <ResponsiveContainer width="100%" height={320}>
 <LineChart
 data={data}
+animationDuration={600}
+animationEasing="ease-in-out"
 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+style={{ background: "#ffffff" }}
 >
 <CartesianGrid
 strokeDasharray="3 3"
@@ -111,7 +114,7 @@ tickFormatter={(v) => v.toFixed(2)}
 <Line
 type="monotone"
 dataKey="avg_nsw_demand"
-name="NSW Demand"
+name="Demanda NSW"
 stroke="var(--color-chart-nsw)"
 strokeWidth={2.5}
 dot={false}
@@ -121,13 +124,11 @@ fill: "var(--color-chart-nsw)",
 stroke: "#ffffff",
 strokeWidth: 2,
 }}
-animationDuration={300}
 />
-
 <Line
 type="monotone"
 dataKey="avg_vic_demand"
-name="VIC Demand"
+name="Demanda VIC"
 stroke="var(--color-chart-vic)"
 strokeWidth={2.5}
 dot={false}
@@ -137,7 +138,6 @@ fill: "var(--color-chart-vic)",
 stroke: "#ffffff",
 strokeWidth: 2,
 }}
-animationDuration={300}
 />
 </LineChart>
 </ResponsiveContainer>
