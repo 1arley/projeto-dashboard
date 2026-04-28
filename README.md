@@ -2,6 +2,8 @@
 
 Este projeto é a solução Full-Stack para o desafio técnico. A partir do [Electricity Demands Dataset (Kaggle)](https://www.kaggle.com/datasets/ulrikthygepedersen/electricity-demands/data) contendo mais de **45.312 registros**, desenvolvi uma arquitetura end-to-end organizada, responsiva e voltada para a clareza analítica.
 
+> 💡 **Deseja começar rapidamente?** Veja o [QUICKSTART.md](QUICKSTART.md) para um guia de inicialização em 5 minutos.
+
 ## 🎯 Atendimento aos Requisitos e Visão Analítica
 
 A solução foi estruturada para ir além de código funcional, fornecendo verdadeiro valor analítico:
@@ -19,6 +21,37 @@ A solução foi estruturada para ir além de código funcional, fornecendo verda
 * **Banco de Dados:** PostgreSQL 15
 * **Front-end:** React 19, Vite, Tailwind CSS v4, Recharts
 * **Infraestrutura:** Docker, Docker Compose, Gunicorn + Nginx
+
+---
+
+## ⚠️ Pré-requisitos (obrigatório antes de começar)
+
+Antes de executar o projeto, é **obrigatório** configurar o arquivo de variáveis de ambiente:
+
+1. **Criar arquivo `.env` na raiz do projeto**:
+   
+   Opção A (automática - recomendada):
+   ```bash
+   make env  # Linux/Mac
+   # ou
+   ./scripts/setup-env.sh  # Gera credenciais seguras automaticamente
+   ```
+   
+   Opção B (manual):
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configurar variáveis de ambiente**:
+   - O script `make env` ou `./scripts/setup-env.sh` gera credenciais seguras automaticamente
+   - Ou edite `.env` manualmente e ajuste `SECRET_KEY`, `DB_PASSWORD`, `POSTGRES_PASSWORD`
+
+3. **Instalar dependências do frontend** (apenas se for desenvolver fora do Docker):
+   ```bash
+   cd frontend
+   npm install  # ou: bun install
+   ```
+   > **Nota:** Se for usar apenas Docker, **não é necessário** instalar dependências localmente. O Docker já instala tudo dentro do container automaticamente.
 
 ---
 
@@ -65,7 +98,11 @@ Após executar o script de inicialização, abra o navegador:
 Para simular o ambiente de produção localmente:
 
 ```bash
-cp .env.example .env        # preencher SECRET_KEY real
+# 1. Gerar .env com credenciais seguras (se ainda não tiver)
+make env  # ou: ./scripts/setup-env.sh
+
+# 2. Ou editar .env manualmente
+# cp .env.example .env  # edite com suas credenciais
 docker compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
