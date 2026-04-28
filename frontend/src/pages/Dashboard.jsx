@@ -493,7 +493,7 @@ export default function Dashboard() {
         ? <ErrorBlock message={demandQuery.error?.message} />
         : demandQuery.data?.length === 0
         ? <EmptyBlock message="Nenhum dado encontrado para este filtro" />
-        : <DemandLineChart key={filterDay === "" ? JSON.stringify(queryParams) : "demand-stable"} data={demandQuery.data || []} />
+        : <DemandLineChart key={JSON.stringify(queryParams)} data={demandQuery.data || []} />
         }
           </div>
         </div>

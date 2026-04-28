@@ -75,13 +75,13 @@ const tooltipContent = useMemo(
 [indexMap]
 );
 
-return (
-<div className="h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
-<ResponsiveContainer width="100%" height={320}>
-<LineChart
-data={data}
-animationDuration={600}
-animationEasing="ease-in-out"
+  return (
+    <div className="chart-container h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
+    <ResponsiveContainer width="100%" height={320}>
+    <LineChart
+      data={data}
+      animationDuration={0}
+      animationEasing="ease-in-out"
 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
 style={{ background: "#ffffff" }}
 >
@@ -111,34 +111,36 @@ tickFormatter={(v) => v.toFixed(2)}
 <Tooltip content={tooltipContent} cursor={false} />
 <Legend content={<CustomLegend />} />
 
-<Line
-type="monotone"
-dataKey="avg_nsw_demand"
-name="Demanda NSW"
-stroke="var(--color-chart-nsw)"
-strokeWidth={2.5}
-dot={false}
-activeDot={{
-r: 5,
-fill: "var(--color-chart-nsw)",
-stroke: "#ffffff",
-strokeWidth: 2,
-}}
-/>
-<Line
-type="monotone"
-dataKey="avg_vic_demand"
-name="Demanda VIC"
-stroke="var(--color-chart-vic)"
-strokeWidth={2.5}
-dot={false}
-activeDot={{
-r: 5,
-fill: "var(--color-chart-vic)",
-stroke: "#ffffff",
-strokeWidth: 2,
-}}
-/>
+        <Line
+          type="monotone"
+          dataKey="avg_nsw_demand"
+          name="Demanda NSW"
+          stroke="var(--color-chart-nsw)"
+          strokeWidth={2.5}
+          dot={false}
+          isAnimationActive={false}
+          activeDot={{
+            r: 5,
+            fill: "var(--color-chart-nsw)",
+            stroke: "#ffffff",
+            strokeWidth: 2,
+          }}
+        />
+        <Line
+          type="monotone"
+          dataKey="avg_vic_demand"
+          name="Demanda VIC"
+          stroke="var(--color-chart-vic)"
+          strokeWidth={2.5}
+          dot={false}
+          isAnimationActive={false}
+          activeDot={{
+            r: 5,
+            fill: "var(--color-chart-vic)",
+            stroke: "#ffffff",
+            strokeWidth: 2,
+          }}
+        />
 </LineChart>
 </ResponsiveContainer>
 </div>
