@@ -39,7 +39,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-only-change-in-prod}
+      - SECRET_KEY=${SECRET_KEY}
       - DB_NAME=${POSTGRES_DB:-electricity_db}
       - DB_USER=${POSTGRES_USER:-admin}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-adminpassword}

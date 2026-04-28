@@ -184,12 +184,16 @@ REST_FRAMEWORK = {
 # Production security
 # -----------------------------------------------------------------
 if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_SSL_REDIRECT = True
+    # SSL/HSTS habilitado apenas quando SECURE_PROXY_SSL_HEADER esta configurado
+    # (ex.: atras de um nginx com SSL termination). Desligado por padrao para
+    # evitar redirect loop quando nao ha TLS configurado.
+    if os.environ.get('USE_SSL', 'false').lower() in ('true', '1', 'yes'):
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+        SECURE_SSL_REDIRECT = True
+        SECURE_HSTS_SECONDS = 31536000
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True

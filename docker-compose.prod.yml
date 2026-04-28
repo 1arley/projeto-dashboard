@@ -17,6 +17,8 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-adminpassword}
       - DB_HOST=db
       - DB_PORT=5432
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
+      - ALLOWED_HOST=${ALLOWED_HOST:-}
     command: >
       sh -c "python manage.py collectstatic --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
