@@ -32,7 +32,7 @@ docker compose up -d --build --wait
 
 echo.
 echo [4/7] Aguardando o Django inicializar...
-set HEALTH_URL=http://localhost:8000/api/electricity/health/
+set HEALTH_URL=http://localhost:8000/api/v1/electricity/health/
 set MAX_WAIT=60
 set WAITED=0
 :healthloop
@@ -63,7 +63,7 @@ docker compose exec web python manage.py collectstatic --noinput
 echo.
 echo ===================================================
 echo Tudo pronto! Servidor rodando.
-echo Teste a API em: http://localhost:8000/api/electricity/dashboard/
+echo Teste a API em: http://localhost:8000/api/v1/electricity/dashboard/
 echo Teste o Frontend em: http://localhost:5173/
 echo ===================================================
 echo.

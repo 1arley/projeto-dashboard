@@ -2,8 +2,9 @@
 
 env:
 	@if [ ! -f .env ]; then \
-		echo "📝 Criando .env com credenciais seguras..."; \
-		./scripts/setup-env.sh; \
+		echo "📝 Criando .env a partir de .env.example..."; \
+		cp .env.example .env; \
+		echo "✅ .env criado."; \
 	else \
 		echo "✅ .env já existe. Use 'make env-renew' para recriar."; \
 	fi
@@ -13,7 +14,8 @@ env-renew:
 	@read -p "Tem certeza? (y/N): " confirm; \
 	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
 		rm -f .env; \
-		./scripts/setup-env.sh; \
+		cp .env.example .env; \
+		echo "✅ Novo .env criado."; \
 	else \
 		echo "Operação cancelada."; \
 	fi
