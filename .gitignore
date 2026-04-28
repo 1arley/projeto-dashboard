@@ -39,7 +39,6 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
-*.log
 
 # Docker
 docker-compose.override.yml

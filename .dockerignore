@@ -3,8 +3,12 @@ __pycache__
 *.pyc
 *.pyo
 .venv
-venv
+venv/
 *.egg-info
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
 
 # Git
 .git
@@ -13,6 +17,9 @@ venv
 # IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
 
 # Environment
 .env
@@ -25,7 +32,14 @@ Thumbs.db
 # Docker
 docker-compose*.yml
 Dockerfile
+docker-compose.override.yml
 
 # Frontend (cada um no seu contexto)
 frontend/node_modules
 frontend/dist
+
+# Secrets
+*.pem
+*.key
+secrets/
+credentials.json
