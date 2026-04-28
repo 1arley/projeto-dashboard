@@ -39,6 +39,7 @@ services:
       db:
         condition: service_healthy
     environment:
+      - DEBUG=${DEBUG:-true}
       - SECRET_KEY=${SECRET_KEY}
       - DB_NAME=${POSTGRES_DB:-electricity_db}
       - DB_USER=${POSTGRES_USER:-admin}
