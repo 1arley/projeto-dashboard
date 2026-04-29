@@ -80,8 +80,8 @@ const tooltipContent = useMemo(
     <ResponsiveContainer width="100%" height={320}>
     <LineChart
       data={data}
-      animationDuration={0}
-      animationEasing="ease-in-out"
+      animationDuration={400}
+      animationEasing="ease-out"
 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
 style={{ background: "#ffffff" }}
 >
@@ -118,7 +118,7 @@ tickFormatter={(v) => v.toFixed(2)}
           stroke="var(--color-chart-nsw)"
           strokeWidth={2.5}
           dot={false}
-          isAnimationActive={false}
+           isAnimationActive={true}
           activeDot={{
             r: 5,
             fill: "var(--color-chart-nsw)",
@@ -133,7 +133,7 @@ tickFormatter={(v) => v.toFixed(2)}
           stroke="var(--color-chart-vic)"
           strokeWidth={2.5}
           dot={false}
-          isAnimationActive={false}
+           isAnimationActive={true}
           activeDot={{
             r: 5,
             fill: "var(--color-chart-vic)",

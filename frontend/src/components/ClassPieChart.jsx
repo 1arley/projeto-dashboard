@@ -73,7 +73,7 @@ export default function ClassPieChart({ data = [] }) {
     }
 
     return (
-        <div className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ background: "#ffffff" }}>
+        <div className="chart-container relative flex h-full w-full items-center justify-center overflow-hidden" style={{ background: "#ffffff" }}>
             <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                     <Pie
@@ -86,7 +86,7 @@ export default function ClassPieChart({ data = [] }) {
                         outerRadius={110}
                         paddingAngle={4}
                         strokeWidth={0}
-                        animationDuration={500}
+                        animationDuration={400}
                         animationEasing="ease-in-out"
                     >
                         {enriched.map((entry) => (
