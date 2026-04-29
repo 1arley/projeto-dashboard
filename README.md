@@ -154,7 +154,7 @@ Resposta `400 Bad Request`:
 
 ## 🧪 Cobertura de Testes
 
-O projeto segue TDD na camada principal de dados com **29 testes unitários independentes** cobrindo os modelos, os comportamentos de endpoint, e falha proposital de filtros.
+O projeto segue TDD na camada principal de dados com **44 testes unitários independentes** cobrindo os modelos, os comportamentos de endpoint, e falha proposital de filtros.
 
 **Como rodar e certificar:**
 ```bash
