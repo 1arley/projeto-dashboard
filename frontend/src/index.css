@@ -85,6 +85,22 @@ background: #d1d5db;
 
 /* Firefox */
 * {
-scrollbar-width: thin;
-scrollbar-color: #e5e7eb transparent;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+/* --- Fade suave para gráficos --- */
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-container {
+  animation: chartFadeIn 400ms ease-out;
 }

@@ -81,12 +81,12 @@ dayLabel: DAY_PT[d.day] ?? d.day,
 );
 
 return (
-<div className="h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
+    <div className="chart-container h-full w-full overflow-hidden" style={{ background: "#ffffff" }}>
 <ResponsiveContainer width="100%" height={320}>
 <BarChart
 data={localized}
-animationDuration={500}
-animationEasing="ease-in-out"
+          animationDuration={400}
+          animationEasing="ease-out"
 layout="vertical"
 margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
 barSize={14}
