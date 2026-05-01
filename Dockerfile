@@ -14,3 +14,5 @@ RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
 
 USER appuser
+
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
